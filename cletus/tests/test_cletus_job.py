@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+""" Used for testing the cletus_job library.
+
+    See the file "LICENSE" for the full license governing use of this file.
+    Copyright 2013, 2014 Ken Farmer
+"""
+
 
 
 # IMPORTS -----------------------------------------------------------------

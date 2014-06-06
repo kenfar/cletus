@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+""" Used as a general aid in testing.
+
+    See the file "LICENSE" for the full license governing use of this file.
+    Copyright 2013, 2014 Ken Farmer
+"""
+
 
 import os
 import imp

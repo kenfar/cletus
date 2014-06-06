@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+""" Used to suppress or block a regularly-scheduled job from running.
+
+    See the file "LICENSE" for the full license governing use of this file.
+    Copyright 2013, 2014 Ken Farmer
+"""
+
 
 import os
 import errno

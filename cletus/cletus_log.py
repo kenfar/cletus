@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+""" Used to quickly and easily set up somewhat comprehensive logging.
+
+    See the file "LICENSE" for the full license governing use of this file.
+    Copyright 2013, 2014 Ken Farmer
+"""
+
 
 import os
 import sys
