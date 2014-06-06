@@ -8,7 +8,7 @@ def read(*paths):
     with open(os.path.join(*paths), 'r') as f:
         return f.read()
 
-version          = "0.1"
+version          = "0.1.2"
 DESCRIPTION      = 'A library of command line utilities'
 
 setup(name             = 'cletus'     ,
