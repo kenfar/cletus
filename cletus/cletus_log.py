@@ -10,16 +10,32 @@ import appdirs
 
 class LogManager(object):
 
-    def __init__(self, log_dir, log_fn, name, log_file_size=100000, log_count=10):
+    def __init__(self,
+                 log_dir,
+                 log_fn,
+                 name,
+                 log_file_size=100000,
+                 log_count=10,
+                 log_to_console=True,
+                 log_to_file=True):
+
+        self.name           = name
         self.log_adapter    = None
         self.formatter      = None
+        self.log_adapter    = None
         self.logger         = logging.getLogger(name)
 
         self.create_log_formatter()
-        self.create_file_handler(self.formatter, log_dir, log_fn, log_file_size, log_count)
-        self.create_console_handler(self.formatter)
 
-        sys.excepthook = excepthook
+        if log_to_file:
+            self.create_file_handler(self.formatter, log_dir, log_fn,
+                                     log_file_size, log_count)
+
+        if log_to_console:
+            self.create_console_handler(self.formatter)
+
+        # Ensure all crashes get logged:
+        sys.excepthook = self.excepthook
 
 
     def create_log_formatter(self):
@@ -36,7 +52,7 @@ class LogManager(object):
 
     def create_file_handler(self, formatter, log_dir, log_fn, log_file_size, log_count):
         if log_dir is None:
-            log_dir    = appdirs.user_data_dir('appintel')
+            log_dir    = appdirs.user_data_dir(self.name)
         try:
             os.makedirs(log_dir)
         except OSError as exception:
@@ -57,7 +73,6 @@ class LogManager(object):
         """ Creates log adapter
             Also create global my_logger reference to it for excepthook.
         """
-        global my_logger
         self.log_adapter = logging.LoggerAdapter(self.logger, {})
         self.log_adapter.info(initial_msg)
         my_logger        = self.log_adapter
@@ -65,18 +80,21 @@ class LogManager(object):
 
 
 
-def excepthook(*args):
-    """ Capture uncaught exceptions, write details into logger, exit.
-        For future reference, could alternatively make this code reusable with following line:
-        logging.getLogger().error('Uncaught exception: ', exc_info=args)
-    """
-    my_logger.critical('Uncaught exception - exiting now. ', exc_info=args)
-    sys.exit(100)
+    def excepthook(self, *args):
+        """ Capture uncaught exceptions, write details into logger, exit.
+            For future reference, could alternatively make this code reusable
+            with following line:
+            logging.getLogger().error('Uncaught exception: ', exc_info=args)
+        """
+        self.log_adapter.critical('Uncaught exception - exiting now. ', exc_info=args)
+        sys.exit(100)
 
 
 def translate_loglevel(loglevel):
-    log_translation = {'0':'NOTSET', '10':'DEBUG', '20':'INFO', '30':'WARNING', '40':'ERROR', '50':'CRITICAL',
-                       'NOTSET':'0', 'DEBUG':'10', 'INFO':'20', 'WARNING':'30', 'ERROR':'40', 'CRITICAL':'50'}
+    log_translation = {'0':'NOTSET', '10':'DEBUG', '20':'INFO',
+                       '30':'WARNING', '40':'ERROR', '50':'CRITICAL',
+                       'NOTSET':'0', 'DEBUG':'10', 'INFO':'20',
+                       'WARNING':'30', 'ERROR':'40', 'CRITICAL':'50'}
     #self.logger.setLevel(logging._levelNames[self.conf_loglevel.upper()])
     return log_translation[str(loglevel)]
 
