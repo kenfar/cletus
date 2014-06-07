@@ -67,10 +67,13 @@ class LogManager(object):
 
     def get_logger(self, initial_msg='Logger starting'):
         """ Creates log adapter
+            Inputs:
+               - initial_msg - defaults to 'Logger starting'
+            Returns:
+               - log_adapter
         """
         self.log_adapter = logging.LoggerAdapter(self.logger, {})
         self.log_adapter.info(initial_msg)
-        my_logger        = self.log_adapter
         return self.log_adapter
 
 
