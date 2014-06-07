@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 """ Used to suppress or block a regularly-scheduled job from running.
 
+    Cletus_supp is highly opinionated about scheduling:
+       - Sometimes schedules need to be suppressed, and commenting jobs
+         in cron is an ugly way to do it.
+       - What's needed is the ability to temporarily suppress a schedule.
+
+    That's what this module does - in a way that makes it easy for the apps.
+
+
     See the file "LICENSE" for the full license governing use of this file.
     Copyright 2013, 2014 Ken Farmer
 """
