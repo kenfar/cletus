@@ -48,15 +48,14 @@ class ConfigManager(object):
                  config_fn,
                  config_schema,
                  log_name='main',
-                 log_level='DEBUG',
                  additional_properties=False):
 
         assert additional_properties in (True, False)
 
         # set up logging:
-        self.logger   = logging.getLogger('%s.config' % log_name)
+        self.logger   = logging.getLogger('%s.cletus_config' % log_name)
         # don't print to sys.stderr if no parent logger has been set up:
-        logging.getLogger(log_name).addHandler(logging.NullHandler())
+        # logging.getLogger(log_name).addHandler(logging.NullHandler())
         self.logger.debug('ConfigManager starting now')
 
         self.additional_properties = additional_properties

@@ -32,14 +32,13 @@ class SuppressCheck(object):
     def __init__(self,
                  mnemonic,
                  config_dir=None,
-                 log_name='main',
-                 log_level='DEBUG'):
+                 log_name='main'):
         """ Does 99% of the work.
         """
         # set up logging
-        self.logger   = logging.getLogger('%s.suppcheck' % log_name)
+        self.logger   = logging.getLogger('%s.cletus_supp' % log_name)
         # don't print to sys.stderr if no parent logger has been set up:
-        logging.getLogger(log_name).addHandler(logging.NullHandler())
+        #logging.getLogger(log_name).addHandler(logging.NullHandler())
         self.logger.debug('SuppressCheck starting now')
 
         self.mnemonic        = mnemonic
