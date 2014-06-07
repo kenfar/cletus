@@ -46,7 +46,7 @@ class ConfigManager(object):
     def __init__(self,
                  config_dir,
                  config_fn,
-                 config_schema,
+                 config_schema=None,
                  log_name='main',
                  additional_properties=False):
 
@@ -69,14 +69,14 @@ class ConfigManager(object):
             os.makedirs(config_dir)
         if not os.path.isfile(self.config_fqfn):
             self.logger.critical('config file missing: %s' % self.config_fqfn)
-            self.logger.critical('config file should be at: %s' % self.config_fqfn)
             sys.exit(1)
 
         with open(self.config_fqfn, 'r') as f:
             self.config    = yaml.safe_load(f)
             self.log_level = dcoaler(self.config, 'log_level', None)
 
-        self._validate()
+        if self.config_schema:
+            self._validate()
 
         # add config to namespace
         # now config items can be access either via dict or namespace
