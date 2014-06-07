@@ -1,6 +1,27 @@
 #!/usr/bin/env python
 """ Used to ensure that only one job runs at a time.
 
+    Cletus_job is highly opinionated about how to ensure only one job
+    at a time runs, when that's important.
+       - Applications shouldn't just be told that they can't run because
+         another instance is already running.  They should also be informed
+         of how long that other instance has been running.  Because sometimes
+         an application is eternally waiting on resources, in an endless loop,
+         etc.  Knowing that an app has been waiting 8 hours when it should
+         never wait more than 5 minutes is useful.
+       - Applications should be able to wait for some amount of time for
+         the older instance to complete.
+       - Just checking on a pid in a file isn't enough: that pid might be
+         orphaned.
+       - When a file system becomes full, a pidfile could be cataloged,
+         but no pid can be written to it.  This needs to be handled.
+
+    So cletus_job's objective is to make it extremely easy for most apps to
+    handle this problem.
+
+    It's not yet done - it needs an flock on the pidfile.  But it's almost
+    there.
+
     See the file "LICENSE" for the full license governing use of this file.
     Copyright 2013, 2014 Ken Farmer
 """
