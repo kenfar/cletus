@@ -1,6 +1,21 @@
 #!/usr/bin/env python
 """ Used to manage access to config files.
 
+    Cletus_config is highly opinionated about what constitutes good config
+    management:
+       - Config files should be kept within the xdg directory:
+            - linux:  $HOME/.config/<app name>
+       - But overrides to the location, for special runs, migrations,
+         testing, etc is occasionally necessary.
+       - The best format at present for config files is yaml.
+       - Config items should be validated.
+       - Arguments should override config items.
+       - It's easier to reference config items as namespaces than
+         dictionaries.
+
+    The objective of cletus_config is to deliver on this optinions in a way
+    that makes it easy for applications.
+
     See the file "LICENSE" for the full license governing use of this file.
     Copyright 2013, 2014 Ken Farmer
 """
