@@ -36,8 +36,8 @@ class LogManager(object):
 
     def __init__(self,
                  log_dir,
-                 log_fn,
-                 name,
+                 log_fn='main.log',
+                 name='main',
                  log_file_size=100000,
                  log_count=10,
                  log_to_console=True,
