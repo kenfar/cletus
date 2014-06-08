@@ -66,12 +66,12 @@ class ConfigManager(object):
                  config_fn=None,
                  config_fqfn=None,
                  config_schema=None,
-                 log_name='main',
+                 log_name='__main__',
                  additional_properties=False):
 
 
         # set up logging:
-        self.logger   = logging.getLogger('%s.ConfigManager' % log_name)
+        self.logger   = logging.getLogger('%s.cletus_config' % log_name)
         # don't print to sys.stderr if no parent logger has been set up:
         # logging.getLogger(log_name).addHandler(logging.NullHandler())
         self.logger.debug('ConfigManager starting now')
