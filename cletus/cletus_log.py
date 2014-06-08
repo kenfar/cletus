@@ -126,7 +126,6 @@ class LogManager(object):
     def _excepthook(self, *args):
         """ Capture uncaught exceptions, write details into logger, exit.
         """
-        #self.log_adapter.critical('Uncaught exception - exiting now. ',
         self.logger.critical('Uncaught exception - exiting now. ', exc_info=args)
         sys.exit(1)
 
