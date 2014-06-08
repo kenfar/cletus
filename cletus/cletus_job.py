@@ -35,12 +35,6 @@ import appdirs
 import logging
 
 
-class NullHandler(logging.Handler):
-    def emit(self, record):
-        #print record
-        pass
-
-
 class JobCheck(object):
     """ Ensures that only 1 job at a time runs.
 
