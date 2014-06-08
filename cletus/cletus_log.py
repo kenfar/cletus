@@ -39,7 +39,7 @@ class LogManager(object):
                  app_name=None,
                  log_dir=None,
                  log_fn='main.log',
-                 log_name='main',
+                 log_name='__main__',
                  log_file_size=100000,
                  log_count=10,
                  log_to_console=True,
@@ -62,6 +62,10 @@ class LogManager(object):
 
         if log_to_console:
             self._create_console_handler()
+
+        #logging from this class isn't working
+        #self.logger_sub     = logging.getLogger('%s.cletus_log' % log_name)
+        #self.logger.debug('logger started, written to: %s' % self.log_dir)
 
         # Ensure all crashes get logged:
         sys.excepthook = self._excepthook
