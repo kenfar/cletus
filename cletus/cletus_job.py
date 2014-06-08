@@ -84,8 +84,10 @@ class JobCheck(object):
         self.mnemonic    = mnemonic
         if config_dir:
             self.config_dir  = os.path.join(config_dir, 'jobs')
+            self.logger.debug('config_dir derrived from arg: %s' % self.config_dir)
         else:
             self.config_dir  = os.path.join(appdirs.user_config_dir(app_name), 'jobs')
+            self.logger.debug('config_dir provided via user_config_dir: %s' % self.config_dir)
         try:
             os.makedirs(self.config_dir)
         except OSError as exception:
