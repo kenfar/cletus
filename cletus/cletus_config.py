@@ -121,13 +121,6 @@ class ConfigManager(object):
             self.logger.critical(e)
             sys.exit(1)
 
-        if self.log_level:
-            if self.log_level not in ['NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
-                self.logger.critical('config parsing error for %s' % self.config_fqfn)
-                self.logger.critical('    log_level has an invalid value of: %s' % self.log_level)
-                self.logger.critical('    should be one of: None, notset, debug, info, warning, error, critical')
-                sys.exit(1)
-
 
 
 
