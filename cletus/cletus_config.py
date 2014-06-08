@@ -24,11 +24,13 @@ from __future__ import division
 import os
 import sys
 
-import yaml
 import time
 import logging
 from pprint import pprint as pp
+
+import yaml
 import validictory as valid
+import appdirs
 
 
 class NullHandler(logging.Handler):
@@ -59,32 +61,43 @@ def dcoaler(dict, key, value_default=None):
 class ConfigManager(object):
 
     def __init__(self,
-                 config_dir,
-                 config_fn,
+                 app_name=None,
+                 config_dir=None,
+                 config_fn=None,
+                 config_fqfn=None,
                  config_schema=None,
                  log_name='main',
                  additional_properties=False):
 
-        assert additional_properties in (True, False)
 
         # set up logging:
-        self.logger   = logging.getLogger('%s.cletus_config' % log_name)
+        self.logger   = logging.getLogger('%s.ConfigManager' % log_name)
         # don't print to sys.stderr if no parent logger has been set up:
         # logging.getLogger(log_name).addHandler(logging.NullHandler())
         self.logger.debug('ConfigManager starting now')
 
+        assert additional_properties in (True, False)
         self.additional_properties = additional_properties
-        self.config_dir    = config_dir
-        self.config_fn     = config_fn
-        self.config_fqfn   = os.path.join(self.config_dir, self.config_fn)
+
+        # figure out the config_fqfn:
+        if config_fqfn:
+            self.config_fqfn = config_fqfn
+            self.logger.debug('using config_fqn: %s' % config_fqfn)
+        elif config_dir and config_fn:
+            self.config_fqfn = os.path.join(config_dir, config_fn)
+            self.logger.debug('using config_dir & config_fn: %s' % config_fqfn)
+        elif app_name and config_fn:
+            self.config_fqfn = os.path.join(appdirs.user_config_dir(app_name), config_fn)
+            self.logger.debug('using app_name & config_fn: %s' % config_fqfn)
+        else:
+            self.logger.critical('Invalid combination of args.  Provide either config_fqfn, config_dir + config_fn, or app_name + config_fn')
+            raise ValueError, 'invalid config args'
+
         self.config_schema = config_schema
 
-        if not os.path.exists(config_dir):
-            self.logger.warning('config dir (%s) is missing - I will create it now' % config_dir)
-            os.makedirs(config_dir)
         if not os.path.isfile(self.config_fqfn):
             self.logger.critical('config file missing: %s' % self.config_fqfn)
-            sys.exit(1)
+            raise IOError, 'config file missing, was expecting %s' % self.config_fqfn
 
         with open(self.config_fqfn, 'r') as f:
             self.config    = yaml.safe_load(f)
