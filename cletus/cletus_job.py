@@ -62,26 +62,36 @@ class JobCheck(object):
     """
 
     def __init__(self,
-                 mnemonic,
-                 config_dir,
-                 log_name='main'):
+                 app_name,
+                 mnemonic='main',
+                 log_name='main',
+                 config_dir=None):
         """ Does 99% of the work.
+            Inputs:
+               - app_name - used to determine config directory
+               - mnemonic - used for name of pidfile.  Different mnemonics allow
+                 the same app to be run for different configs at the same time.
+               - log_name - should be passed from caller.
+               - config_dir - can be used instead of the automatic XDG directory
+                 user_config_dir, which is very useful for testing.
         """
         self.logger   = logging.getLogger('%s.cletus_job' % log_name)
         # con't print to sys.stderr if no parent logger has been set up:
         #logging.getLogger(log_name).addHandler(logging.NullHandler())
         self.logger.debug('JobCheck starting now')
 
-        self.mnemonic        = mnemonic
+        # set up config/pidfile directory:
+        self.mnemonic    = mnemonic
         if config_dir:
-            self.config_dir  = config_dir
+            self.config_dir  = os.path.join(config_dir, 'jobs')
         else:
-            self.config_dir  = os.path.join(appdirs.user_data_dir('jobchecker'), 'pids')
+            self.config_dir  = os.path.join(appdirs.user_config_dir(app_name), 'jobs')
         try:
             os.makedirs(self.config_dir)
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise
+
         self.pid_fqfn        = os.path.join(self.config_dir, '%s.pid' % self.mnemonic)
 
         self.new_pid         = os.getpid()
@@ -110,7 +120,6 @@ class JobCheck(object):
             if the output is > 0 - then don't go - another process is already
             running.
         """
-        #self.logger.debug('old_job_age in sec (0==no old job): %d' % self.old_job_age)
         return self.old_job_age
 
 
