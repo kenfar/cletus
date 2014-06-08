@@ -26,19 +26,21 @@ APP_NAME  = 'cletus_example'
 
 def main():
 
-    args      = get_args()
-
-    # set up logging:
+    # initialization
+    args       = get_args()
     setup_logging(args.log_to_console, args.log_level)
-
-    # set up config
+    logger.info('cletus_archiver - starting')
     config     = setup_config(args.config)
-
-    # check if already running
-    check_if_already_running()
+    jobcheck   = check_if_already_running()
+    check_if_suppressed()
 
     # run the process:
     process_all_the_files()
+
+    # housekeeping
+    jobcheck.close()
+    logger.info('cletus_archiver - terminating normally')
+    return 0
 
 
 
@@ -91,10 +93,8 @@ def setup_logging(log_to_console, log_level):
     cl_logger  = log.LogManager(app_name=APP_NAME,
                                 log_name=__name__,
                                 log_to_console=log_to_console)
-
     logger     = cl_logger.logger
     logger.setLevel(log_level or 'DEBUG')
-    logger.info('cletus_archiver starting!')
 
 
 
@@ -128,6 +128,19 @@ def check_if_already_running():
         sys.exit(0)
     else:
         logger.info('JobCheck has passed')
+        return jobcheck
+
+
+
+def check_if_suppressed():
+
+    suppcheck  = supp.SuppressCheck(app_name=APP_NAME,
+                                    log_name=__name__)
+    if suppcheck.suppressed():
+        logger.warning('Pgm has been suppressed - this instance will be terminated.')
+        sys.exit(0)
+    else:
+        logger.info('SuppCheck has passed')
 
 
 
