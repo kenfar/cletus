@@ -38,9 +38,10 @@ class SuppressCheck(object):
     """
 
     def __init__(self,
-                 mnemonic,
-                 config_dir=None,
-                 log_name='main'):
+                 app_name,
+                 mnemonic='main',
+                 log_name='__main__',
+                 config_dir=None):
         """ Does 99% of the work.
         """
         # set up logging
