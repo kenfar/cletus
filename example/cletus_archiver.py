@@ -26,20 +26,16 @@ APP_NAME  = 'cletus_example'
 
 def main():
 
-    global logger
     args      = get_args()
 
     # set up logging:
-    cl_logger  = log.LogManager(app_name=APP_NAME,
-                                log_name=__name__,
-                                log_to_console=args.log_to_console)
-
-    logger     = cl_logger.logger
-    logger.setLevel(args.log_level_upper or 'DEBUG')
-    logger.info('cletus_archiver starting!')
+    setup_logging(args.log_to_console, args.log_level)
 
     # set up config
     config     = setup_config(args.config)
+
+    # check if already running
+    check_if_already_running()
 
     # run the process:
     process_all_the_files()
@@ -90,6 +86,17 @@ def get_file_times(file_name):
 
 
 
+def setup_logging(log_to_console, log_level):
+    global logger
+    cl_logger  = log.LogManager(app_name=APP_NAME,
+                                log_name=__name__,
+                                log_to_console=log_to_console)
+
+    logger     = cl_logger.logger
+    logger.setLevel(log_level or 'DEBUG')
+    logger.info('cletus_archiver starting!')
+
+
 
 def setup_config(args_config):
 
@@ -107,6 +114,20 @@ def setup_config(args_config):
                                 config_schema=config_schema,
                                 log_name=__name__)
     return config
+
+
+
+
+def check_if_already_running():
+
+    jobcheck  = job.JobCheck(app_name=APP_NAME,
+                             log_name=__name__)
+    if jobcheck.old_job_age > 0:
+        logger.warning('Pgm is already running - this instance will be terminated')
+        logger.warning('old job has been running %d seconds' % jobcheck.old_job_age)
+        sys.exit(0)
+    else:
+        logger.info('JobCheck has passed')
 
 
 
@@ -137,7 +158,6 @@ def get_args():
 
     args = parser.parse_args()
 
-    args.log_level_upper = args.log_level.upper if args.log_level else None
 
     return args
 
