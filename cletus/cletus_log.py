@@ -29,24 +29,27 @@ import sys
 import logging
 import logging.handlers
 import errno
+
 import appdirs
 
 
 class LogManager(object):
 
     def __init__(self,
-                 log_dir,
+                 app_name=None,
+                 log_dir=None,
                  log_fn='main.log',
-                 name='main',
+                 log_name='main',
                  log_file_size=100000,
                  log_count=10,
                  log_to_console=True,
                  log_to_file=True):
 
-        self.name           = name
+        self.app_name       = app_name
+        self.log_name       = log_name
         self.formatter      = None
         self.log_adapter    = None
-        self.logger         = logging.getLogger(name)
+        self.logger         = logging.getLogger(log_name)
         self.log_dir        = log_dir
         self.log_fn         = log_fn
         self.log_count      = log_count
@@ -62,19 +65,6 @@ class LogManager(object):
 
         # Ensure all crashes get logged:
         sys.excepthook = self._excepthook
-
-
-
-    def get_logger(self, initial_msg='Logger starting'):
-        """ Creates log adapter
-            Inputs:
-               - initial_msg - defaults to 'Logger starting'
-            Returns:
-               - log_adapter
-        """
-        self.log_adapter = logging.LoggerAdapter(self.logger, {})
-        self.log_adapter.info(initial_msg)
-        return self.log_adapter
 
 
 
@@ -107,22 +97,23 @@ class LogManager(object):
             so when files reach log_file_size they will get renamed and have a numeric
             suffix added.
 
-            If no log_directory was provided then it will get that from the XDG standard
-            for user_log_dir.   This is typically $HOME/.cache/name on linux.
-
             It will attempt to make this directory if it does not exist.
         """
-        if self.log_dir is None:
-            log_dir    = appdirs.user_log_dir(self.name)
+        if not self.log_dir:
+            if self.app_name:
+                self.log_dir = appdirs.user_log_dir(self.app_name)
+            else:
+                print 'CRITICAL: cannot write logs to files without either log_dir or app_name'
+                sys.exit(1)
 
         try:
-            os.makedirs(log_dir)
+            os.makedirs(self.log_dir)
         except OSError as exception:
             if exception.errno != errno.EEXIST:
-                self.logger.critical('Log directory creation failed.  Log dir: %s' % log_dir)
+                self.logger.critical('Log directory creation failed.  Log dir: %s' % self.log_dir)
                 raise
 
-        log_fqfn = os.path.join(log_dir, self.log_fn)
+        log_fqfn = os.path.join(self.log_dir, self.log_fn)
 
         file_handler = logging.handlers.RotatingFileHandler(log_fqfn,
                                                             maxBytes=self.log_file_size,
@@ -135,23 +126,9 @@ class LogManager(object):
     def _excepthook(self, *args):
         """ Capture uncaught exceptions, write details into logger, exit.
         """
-        self.log_adapter.critical('Uncaught exception - exiting now. ',
-                                  exc_info=args)
+        #self.log_adapter.critical('Uncaught exception - exiting now. ',
+        self.logger.critical('Uncaught exception - exiting now. ', exc_info=args)
         sys.exit(1)
-
-
-
-def translate_loglevel(loglevel):
-    log_translation = {'0':'NOTSET', '10':'DEBUG', '20':'INFO',
-                       '30':'WARNING', '40':'ERROR', '50':'CRITICAL',
-                       'NOTSET':'0', 'DEBUG':'10', 'INFO':'20',
-                       'WARNING':'30', 'ERROR':'40', 'CRITICAL':'50'}
-    #self.logger.setLevel(logging._levelNames[self.conf_loglevel.upper()])
-    return log_translation[str(loglevel)]
-
-
-
-
 
 
 
