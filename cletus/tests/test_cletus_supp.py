@@ -16,12 +16,13 @@ import glob
 import shutil
 import envoy
 import pytest
+from pprint import pprint as pp
 
-#sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-sys.path.insert(0, '../')
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+#sys.path.insert(0, '../')
 
-#import cletus.cletus_supp as  mod
-import cletus_supp as  mod
+import cletus.cletus_supp as  mod
+#import cletus_supp as  mod
 
 print '\nNote: code being tested will produce some messages to ignore'
 
@@ -59,18 +60,20 @@ class TestValidSuppressFile(object):
 class TestSuppressCheck(object):
 
    def setup_method(self, method):
-       self.temp_dir = tempfile.mkdtemp()
-       self.mnemonic = 'foo'
+       self.temp_parent_dir = tempfile.mkdtemp()
+       self.temp_dir        = os.path.join(self.temp_parent_dir, 'suppress')
+       os.mkdir(self.temp_dir)
+       self.app_name = 'foo'
 
    def teardown_method(self, method):
-       shutil.rmtree(self.temp_dir)
+       shutil.rmtree(self.temp_parent_dir)
 
    def test_no_suppressions(self):
        """ Confirm that nothing gets suppressed when the suppression dir
            is empty.
        """
-       suppcheck = mod.SuppressCheck(config_dir=self.temp_dir,
-                                     mnemonic=self.mnemonic)
+       suppcheck = mod.SuppressCheck(self.app_name,
+                                     config_dir=self.temp_parent_dir)
        assert not suppcheck.suppressed()
        assert not suppcheck.suppressed('bar')
 
@@ -78,19 +81,20 @@ class TestSuppressCheck(object):
        """ Confirm that all names are suppressed when this file exists in
            suppression dir:   'name-all.suppress'
        """
+       print 'testing temp_dir: %s' % self.temp_dir
        write_suppression_file(self.temp_dir, 'all')
-       suppcheck = mod.SuppressCheck(config_dir=self.temp_dir,
-                                     mnemonic=self.mnemonic)
-       assert suppcheck.suppressed()      is True
-       assert suppcheck.suppressed('bar') is True
+       suppcheck = mod.SuppressCheck(self.app_name,
+                                     config_dir=self.temp_parent_dir)
+       assert suppcheck.suppressed()
+       assert suppcheck.suppressed('bar')
 
    def test_some_suppression(self):
        """ Confirm that only matching names are suppressed when a non-all
            suppression file exists.
        """
        write_suppression_file(self.temp_dir, 'foo')
-       suppcheck = mod.SuppressCheck(config_dir=self.temp_dir,
-                                     mnemonic=self.mnemonic)
+       suppcheck = mod.SuppressCheck(self.app_name,
+                                     config_dir=self.temp_parent_dir)
        assert suppcheck.suppressed()      is False
        assert suppcheck.suppressed('bar') is False
        assert suppcheck.suppressed('foo') is True
@@ -102,8 +106,8 @@ class TestSuppressCheck(object):
        with open(suppress_fqfn, 'w') as f:
            f.write('')
        with pytest.raises(ValueError):
-           suppcheck = mod.SuppressCheck(config_dir=self.temp_dir,
-                                         mnemonic=self.mnemonic)
+           suppcheck = mod.SuppressCheck(self.app_name,
+                                         config_dir=self.temp_parent_dir)
 
 
 

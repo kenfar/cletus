@@ -6,7 +6,6 @@
 """
 
 
-
 # IMPORTS -----------------------------------------------------------------
 import sys
 import os
@@ -16,11 +15,15 @@ import glob
 import shutil
 import envoy
 import pytest
+import fcntl
 
-sys.path.insert(1, '../')
+#sys.path.insert(1, '../')
+#import cletus_job as  mod
 
-#import cletus.cletus_job as  mod
-import cletus_job as  mod
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import cletus.cletus_job  as mod
+
+
 
 
 print '\n\nNote: code being tested will produce some messages to ignore\n'
@@ -29,7 +32,10 @@ print '\n\nNote: code being tested will produce some messages to ignore\n'
 def get_file_pid(temp_dir, pid_fn='*.pid'):
 
     pid_files = glob.glob(os.path.join(temp_dir, pid_fn))
+    print pid_files
     with open(pid_files[0], 'r') as f:
+        print '================ pid contents: ================ '
+        print f.read()
         file_pid = int(f.read())
     return pid_files, file_pid
 
@@ -41,86 +47,114 @@ def write_file_pid(pid_fqfn, pid=123456):
 
 
 
-class TestJobCheck(object):
+class TestPidFile(object):
 
-   def setup_method(self, method):
-       self.temp_dir = tempfile.mkdtemp()
-       self.mnemonic = 'foo'
-       self.pid_fqfn = os.path.join(self.temp_dir, '%s.pid' % self.mnemonic)
-       self.c        = envoy.connect("sleep 4")
+    def setup_method(self, method):
+        pass
 
-   def teardown_method(self, method):
-       shutil.rmtree(self.temp_dir)
-       self.c.kill()
+    def teardown_method(self, method):
+        pass
 
+    def test_correct_pid(self):
+        pass
+        # run jobcheck directly
+        # read pidfile       
 
-   def test_no_running_process(self):
-       """ Ensure everything works correctly for the most common case - in
-           which there is no pre-existing app still running, and no orphaned
-           pidfile.
-       """
-       my_jobcheck = mod.JobCheck(config_dir=self.temp_dir,
-                                  mnemonic=self.mnemonic)
-       pid_files, file_pid = get_file_pid(self.temp_dir)
-       assert my_jobcheck.get_old_job_age() == 0
-       assert len(pid_files) == 1
-       assert file_pid == my_jobcheck.new_pid
+    def test_delete_pidfile(self):
+        pass
+        # run jobcheck directly
+        # read pidfile       
 
 
-   def test_running_process(self):
-       """ Ensure everything works correctly with a pre-existing running
-           process.
-       """
-       pid    = str(self.c.pid)
-       with open(self.pid_fqfn, 'w') as f:
-            f.write(pid)
-
-       time.sleep(1)
-       my_jobcheck = mod.JobCheck(config_dir=self.temp_dir,
-                                  mnemonic=self.mnemonic)
-       old_job_age = my_jobcheck.get_old_job_age()
-       assert 10 > old_job_age > 0
-       pid_files, file_pid = get_file_pid(self.temp_dir)
-       assert len(pid_files) == 1
-       assert file_pid == my_jobcheck.old_pid
 
 
-   def test_orphaned_process(self):
-       """ Tests if create_pid_file() correctly handles a pidfile with no
-           running process associated with its PID.
+
+class TestCompetingJobs(object):
+
+    def setup_method(self, method):
+        pass
+
+    def teardown_method(self, method):
+        pass
+
+    def test_single_process(self):
+
+       # confirm it locks & responds right in the
+       # simplest case.
+       cmd1     = '''run_cletus_job_once.py      \
+                       --lock-wait 1               \
+                       --post-lock-sleep 1         \
+                  '''
+       self.c1   = envoy.run(cmd1)
+       assert self.c1.status_code == 0 # locked
+       
+
+    def test_single_asynch_process(self):
+       """ Objective is to confirm that this method of 
+           running the job will work correctly.
        """
 
-       # first - create a pidfile:
-       test_pid    = 39578340
-       try:
-           os.kill(test_pid, 0)
-           print 'made-up pid already exists - will interfere with test - rerun'
-           sys.exit(1)
-       except OSError:
-           pass  # expected result for non-existing process
-       with open(self.pid_fqfn, 'w') as f:
-           f.write(str(test_pid))
+       cmd1     = '''run_cletus_job_once.py      \
+                       --lock-wait 1               \
+                       --post-lock-sleep 1         \
+                  '''
+       #--------------------------------------------
+       # note that due to a bug in envoy, you must 
+       # block before you can check the status_code
+       #-------------------------------------------
+       self.c   = envoy.connect(cmd1)
+       self.c.block() 
+       assert self.c.status_code == 0 # locked
+       
 
-       # next - run and see how it's interpreted:
-       my_jobcheck = mod.JobCheck(config_dir=self.temp_dir,
-                                  mnemonic=self.mnemonic)
-       old_job_age = my_jobcheck.get_old_job_age()
-       pid_files, file_pid = get_file_pid(self.temp_dir)
-       assert old_job_age    == 0
-       assert file_pid       == my_jobcheck.new_pid
-       assert len(pid_files) == 1
+    def test_two_asynch_running(self):
+
+       #---- get lock & hold it
+       cmd1     = '''run_cletus_job_once.py      \
+                       --lock-wait  0              \
+                       --post-lock-sleep 3       '''
+       self.c   = envoy.connect(cmd1)
+
+       #---- ensure cmd1 locks file before cmd2 starts!
+       time.sleep(0.5)  
+
+       #---- try to get lock, fail, quit fast 
+       cmd2     = '''run_cletus_job_once.py      \
+                       --lock-wait  0              \
+                       --post-lock-sleep 0       '''
+       self.c2  = envoy.connect(cmd2)
+
+       #---- finish cmd2, then finish cmd1
+       self.c.block()
+       self.c2.block()
+
+       assert self.c.status_code  == 0 # locked
+       assert self.c2.status_code != 0 # not-locked
 
 
-   def test_running_process_with_empty_pidfile(self):
-       """ Ensure everything works correctly with a pre-existing running
-           process - that has an empty pidfile.
-       """
-       with open(self.pid_fqfn, 'w') as f:
-            f.write('')
+    def test_two_asynch_running_retry_locks(self):
 
-       time.sleep(1)
-       with pytest.raises(IOError):
-           my_jobcheck = mod.JobCheck(config_dir=self.temp_dir,
-                                      mnemonic=self.mnemonic)
+       #--- get lock & hold it
+       cmd1     = '''run_cletus_job_once.py      \
+                       --lock-wait  0              \
+                       --post-lock-sleep 2       '''
+       self.c   = envoy.connect(cmd1)
 
+       #---- ensure cmd1 locks file before cmd2 starts!
+       time.sleep(0.5)  
+
+       #---- try to get lock, wait for it, get it
+       cmd2     = '''run_cletus_job_once.py      \
+                       --lock-wait  3              \
+                       --post-lock-sleep 0       '''
+
+       self.c2  = envoy.connect(cmd2)
+
+       #---- finish cmd2, then finish cmd1
+       self.c2.block()
+       self.c.block()
+
+       assert self.c2.status_code == 0 # locked
+       assert self.c.status_code  == 0 # locked
+       
 
