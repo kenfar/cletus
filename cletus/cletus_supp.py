@@ -38,8 +38,7 @@ class SuppressCheck(object):
     """
 
     def __init__(self,
-                 app_name,
-                 mnemonic='main',
+                 app_name='main',
                  log_name='__main__',
                  config_dir=None):
         """ Does 99% of the work.
@@ -50,13 +49,14 @@ class SuppressCheck(object):
         #logging.getLogger(log_name).addHandler(logging.NullHandler())
         self.logger.debug('SuppressCheck starting now')
 
-        self.mnemonic        = mnemonic
+        self.app_name        = app_name
         if config_dir:
             self.config_dir  = os.path.join(config_dir, 'suppress')
             self.logger.debug('config_dir derrived from arg: %s' % self.config_dir)
         else:
-            self.config_dir  = os.path.join(appdirs.user_config_dir(mnemonic), 'suppress')
+            self.config_dir  = os.path.join(appdirs.user_config_dir(app_name), 'suppress')
             self.logger.debug('config_dir provided via user_config_dir: %s' % self.config_dir)
+        print 'suppresscheck self.config_dir: %s' % self.config_dir
 
         try:
             os.makedirs(self.config_dir)
@@ -90,8 +90,11 @@ class SuppressCheck(object):
                 self.logger.info('Process has been suppressed')
                 return True
             else:
+                print '1st false'
                 return False
         else:
+            print '2nd false'
+            print self.names_suppressed
             return False
 
 
