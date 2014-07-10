@@ -3,24 +3,15 @@
 
     Cletus_job is highly opinionated about how to ensure only one job
     at a time runs, when that's important.
-       - Applications shouldn't just be told that they can't run because
-         another instance is already running.  They should also be informed
-         of how long that other instance has been running.  Because sometimes
-         an application is eternally waiting on resources, in an endless loop,
-         etc.  Knowing that an app has been waiting 8 hours when it should
-         never wait more than 5 minutes is useful.
        - Applications should be able to wait for some amount of time for
          the older instance to complete.
        - Just checking on a pid in a file isn't enough: that pid might be
-         orphaned.
+         orphaned, and you can easily get race conditions.
        - When a file system becomes full, a pidfile could be cataloged,
          but no pid can be written to it.  This needs to be handled.
 
     So cletus_job's objective is to make it extremely easy for most apps to
     handle this problem.
-
-    It's not yet done - it needs an flock on the pidfile.  But it's almost
-    there.
 
     See the file "LICENSE" for the full license governing use of this file.
     Copyright 2013, 2014 Ken Farmer
@@ -30,93 +21,132 @@
 import os
 import errno
 import time
+import fcntl
 
 import appdirs
 import logging
 
 
+
 class JobCheck(object):
     """ Ensures that only 1 job at a time runs.
 
-        Typical Usage:
-           job_check    = mod.JobCheck(pgm_name)
-           old_job_age  = job_check.get_old_job_age()
-           if old_job_age:
-               print 'WARNING: process already running'
-               print '   Old job has been running %d seconds' % old_job_age
-               sys.exit(0)
+    Typical Usage:
+        job_check    = mod.JobCheck(pgm_name)
+        if job_check.lock_pidfile():
+            print 'Lock acquired, will start processing'
+        else:
+            print 'Try again later, already running'
 
-           *** at end of program ***
-           job_check.close()
+        *** at end of program ***
+        job_check.close()
 
-        misc notes:
-        - tested via test-harness
+    Inputs:
+        app_name (str) - Used for two purposes: to lookup pid directory based on xdg
+                         standards, and to name pid file.  Lookup only occurs if the
+                         pid_dir is not provided.  Defaults to 'main'.
+        log_name (str) - Should be passed from caller in order to ensure logging
+                         characteristics are inherited correctly.  Defaults to __main__.
+        pid_dir (str)  - Can be used instead of the automatic XDG directory
+                         user_cache_dir, which is useful for testing among other things.
+                         Defaults to None - which is fine as long as app_name is provided.
 
-        !!!! should use flock !!!!
+    Raises:
+        ValueError   - Neither app_name nor pid_dir was provided, one must be
+        OSError      - Could not create pid dir and it didn't already exist
     """
 
     def __init__(self,
-                 app_name,
-                 mnemonic='main',
+                 app_name='main',
                  log_name='__main__',
-                 config_dir=None):
-        """ Does 99% of the work.
-            Inputs:
-               - app_name - used to determine config directory
-               - mnemonic - used for name of pidfile.  Different mnemonics allow
-                 the same app to be run for different configs at the same time.
-               - log_name - should be passed from caller.
-               - config_dir - can be used instead of the automatic XDG directory
-                 user_config_dir, which is very useful for testing.
-        """
+                 pid_dir=None):
+
         self.logger   = logging.getLogger('%s.cletus_job' % log_name)
         # con't print to sys.stderr if no parent logger has been set up:
         #logging.getLogger(log_name).addHandler(logging.NullHandler())
         self.logger.debug('JobCheck starting now')
 
         # set up config/pidfile directory:
-        self.mnemonic    = mnemonic
-        if config_dir:
-            self.config_dir  = os.path.join(config_dir, 'jobs')
-            self.logger.debug('config_dir derrived from arg: %s' % self.config_dir)
-        else:
-            self.config_dir  = os.path.join(appdirs.user_config_dir(app_name), 'jobs')
-            self.logger.debug('config_dir provided via user_config_dir: %s' % self.config_dir)
-        try:
-            os.makedirs(self.config_dir)
-        except OSError as exception:
-            if exception.errno != errno.EEXIST:
-                raise
+        self.app_name      = app_name
+        self.pid_dir       = self._get_pid_dir(app_name, pid_dir)
+        self.pid_fqfn      = os.path.join(self.pid_dir, '%s.pid' % self.app_name)
 
-        self.pid_fqfn        = os.path.join(self.config_dir, '%s.pid' % self.mnemonic)
-
-        self.new_pid         = os.getpid()
-        self.old_pid         = self._get_file_pid()
-        self.old_job_age     = self._get_file_age()
-        assert ((self.old_pid == 0 and self.old_job_age == 0)
-             or (self.old_pid > 0 and self.old_job_age > 0))
-
-        if (self.old_job_age and self._old_pid_active()):
-            self.logger.warning('WARNING: active process still running')
-        else:
-            self.logger.debug('no active process found')
-            self._delete_pidfile()
-            self.old_pid     = 0
-            self.old_job_age = 0
-            self._make_pidfile()
+        self.new_pid       = os.getpid()
+        self.start_time    = time.time()
+        self.lock_acquired = False
 
 
-    def get_old_job_age(self):
-        """ Provides easy method for calling programs to determine if they have
-            a green light to go:
-                - no inputs
-                - returns number of seconds an existing process has been
-                  running
-            if the output is 0 - then you're good to go
-            if the output is > 0 - then don't go - another process is already
-            running.
+
+
+    def lock_pidfile(self, wait_max=60):
         """
-        return self.old_job_age
+        Inputs:
+           wait_max (int) - Maximum number of seconds for Jobcheck to keep retrying
+                            lock acquisition.  If it exceeds this number it will
+                            return False.
+        Returns:
+           True      - if lock was acquired
+           False     - if lock was not acquired - pidfile is already locked
+        Raises:
+           IOError   - if pidfile is inaccessable
+        """
+        while not self._create_locked_pidfile(self.pid_fqfn, self.new_pid):
+            if (time.time() - self.start_time) > wait_max:
+                self.logger.error('wait_max exceeded, returning without lock')
+                return False
+            else:
+                self.logger.warning('sleeping - waiting for lock')
+                time.sleep(0.5)
+
+        self.logger.debug('lock acquired - will return to caller')
+        self.lock_acquired = True
+        return True
+
+
+    def _create_locked_pidfile(self, pid_fqfn, pid):
+        """ Opens the pidfile, locks it, and writes the pid to it.
+            Inputs:
+                - pid_fqfn
+                - pid
+            Returns
+                - True    - if locking was successful
+                - False   - if locking was unsuccessful
+            Raises
+                - IOError - if file was inaccessible
+        """
+        try:
+            self.pidfd = open(pid_fqfn, 'a')
+        except IOError, e:
+            self.logger.critical('Could not open pidfile: %s - permissions? missing dir?' % e)
+            raise
+        else:
+            try:
+                fcntl.flock(self.pidfd, fcntl.LOCK_EX|fcntl.LOCK_NB)
+            except IOError:
+                self.pidfd.close()
+                return False
+            else:
+                self.pidfd.seek(0)
+                self.pidfd.truncate()
+                self.pidfd.write(str(pid))
+                self.pidfd.flush()
+                return True
+
+
+    def _close_pidfile(self):
+        """ Deletes pid from pidfile then closes it.
+            Raises
+                OSError if it cannot delete from pidfile or close it.
+        """
+        try:
+            self.pidfd.seek(0)
+            self.pidfd.truncate()
+            self.pidfd.flush()
+            self.pidfd.close()
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                self.logger.critical('_delete_pidfile encountered IO error: %s' % e)
+                raise
 
 
     def close(self):
@@ -125,79 +155,48 @@ class JobCheck(object):
             and could hypothetically result in errors.
 
         """
-        if self.old_pid:
-            self.logger.warning('close() should not be called when old job already exists. Will ignore.')
+        if self.lock_acquired:
+            self._close_pidfile()
         else:
-            self._delete_pidfile()
+            self.logger.warning('close() should not be called when lock was not acquired.  Will ignore.')
 
 
-    def _get_file_pid(self):
-        """ Out of space conditions may allow the file to be cataloged, but
-            no data written.   If this happens the function will print a
-            message and raise an exception.
+
+    def _get_pid_dir(self, app_name, arg_pid_dir):
+        """Returns the pid_dir based on the arg_pid_dir if that's provided,
+           otherwise by looking up the app_name in the xdg user_cache_dir.
+
+           Inputs
+                - app_name
+                - arg_pid_dir 
+           Returns
+                - pid_dir
+           Raises
+                - ValueError - if neither app_name nor pid_dir is provided
+                - OSError - if pid_dir doesn't exist and it can't make it
         """
-        try:
-            with open(self.pid_fqfn, 'r') as f:
-                return int(f.read())
-        except IOError as exception:
-            if exception.errno == errno.ENOENT:
-                return 0
+
+        # first figure out what the directory is:
+        if arg_pid_dir:
+            pid_dir  = arg_pid_dir
+            self.logger.debug('pid_dir will be based on arg: %s' % arg_pid_dir)
+        else:
+            if app_name:
+                pid_dir  = os.path.join(appdirs.user_cache_dir(app_name), 'jobs')
+                self.logger.debug('pid_dir will be based on user_cache_dir: %s' % pid_dir)
             else:
-                raise
-        except ValueError:
-            self.logger.critical('empty pidfile found!')
-            self.logger.critical('Prior process probably ran out of disk')
-            raise IOError
+                err_msg = 'app_name must be provided if pid_dir is not'
+                self.logger.critical(err_msg)
+                raise ValueError, err_msg
 
-
-    def _old_pid_active(self):
-        """ Checks to see if pid is still running
-            Returns True/False
-            Should be able to deal with 0 pid for non-existing files just fine
-        """
+        # next try to create it, just in case it isn't there
         try:
-            os.kill(self.old_pid, 0)
-            self.logger.warning('program already running')
-            return True
-        except OSError:
-            self.logger.warning('program has a pidfile but is not currently running')
-            return False
-        return False
-
-
-    def _make_pidfile(self):
-        """ Creates a pidfile with the new pid inside the file.
-        """
-        with open(self.pid_fqfn, 'w') as f:
-            f.write(str(self.new_pid))
-
-
-    def _delete_pidfile(self):
-        """ Deletes pidfile if it exists.
-            Handles non-existing files.
-        """
-        try:
-            os.remove(self.pid_fqfn)
+            os.makedirs(pid_dir)
         except OSError as exception:
-            if exception.errno != errno.ENOENT:
-                self.logger.critical('_delete_pidfile encountered IO error')
+            if exception.errno != errno.EEXIST:
+                self.logger.critical('Error trying to create pid_dir: %s' % pid_dir)
                 raise
 
-
-    def _get_file_age(self):
-        """ Returns the duration of the existing pidfile in seconds.
-            If the duration is less than 1 second, will still return 1.
-            If no pidfile exists, will return 0.
-        """
-        try:
-            return max(1, time.time() - os.path.getmtime(self.pid_fqfn))
-        except OSError as exception:
-            if exception.errno == errno.ENOENT:
-                return 0
-                self.logger.warning('get_file_age found no file - probably deleted in race condition')
-            else:
-                self.logger.critical('get_file_age encountered IO Error')
-                raise
-
-
+        # finally, return it
+        return pid_dir
 
