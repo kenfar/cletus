@@ -6,9 +6,9 @@
        - Config files should be kept within the xdg directory:
             - linux:  $HOME/.config/<app name>
        - But overrides to the location, for special runs, migrations,
-         testing, etc is occasionally necessary.
+         testing, etc are occasionally necessary.
        - The best format at present for config files is yaml.
-       - Config items should be validated.
+       - Config file contents should be validated.
        - Arguments should override config items.
        - It's easier to reference config items as namespaces than
          dictionaries.
@@ -19,6 +19,11 @@
     See the file "LICENSE" for the full license governing use of this file.
     Copyright 2013, 2014 Ken Farmer
 """
+
+# todo:
+# 1. validate the validation schema, sigh, well at least a little
+# 2. allow users to add args and override config with them
+# 3. allow users to lookup environ variables and override config with them
 
 from __future__ import division
 import os
@@ -58,17 +63,15 @@ def dcoaler(dict, key, value_default=None):
 
 
 
+
 class ConfigManager(object):
 
     def __init__(self,
-                 app_name=None,
-                 config_dir=None,
-                 config_fn=None,
-                 config_fqfn=None,
                  config_schema=None,
                  log_name='__main__',
-                 additional_properties=False):
+                 namespace_access=True):
 
+        self.namespace_access = namespace_access
 
         # set up logging:
         self.logger   = logging.getLogger('%s.cletus_config' % log_name)
@@ -76,8 +79,42 @@ class ConfigManager(object):
         # logging.getLogger(log_name).addHandler(logging.NullHandler())
         self.logger.debug('ConfigManager starting now')
 
-        assert additional_properties in (True, False)
-        self.additional_properties = additional_properties
+        self.config_schema = config_schema
+
+        self.config_file      = {}
+        self.config_env       = {}
+        self.config_namespace = {}
+        self.config_dict      = {}
+        self.config           = {}
+
+        # store an original copy of variable names to use to protect
+        # from updating by bunch later on.
+        self.orig_dict_keys   = self.__dict__.keys()
+
+        
+    def _bunch(self):
+        #self.__dict__.update(adict)
+        for key, val in self.config.items():
+            if key in self.orig_dict_keys:
+                raise ValueError, 'config key is a reserved value: %s' % key
+            elif key in dir(ConfigManager):
+                raise ValueError, 'config key is a reserved value: %s' % key
+            else:
+                self.__dict__[key] = val
+
+    def _post_add_maintenance(self, config):
+        self.config.update(config)
+        self.log_level = dcoaler(self.config, 'log_level', None)
+        if self.namespace_access:
+           n = self._bunch()
+
+
+
+    def add_file(self,
+                 app_name=None,
+                 config_dir=None,
+                 config_fn=None,
+                 config_fqfn=None):
 
         # figure out the config_fqfn:
         if config_fqfn:
@@ -93,36 +130,73 @@ class ConfigManager(object):
             self.logger.critical('Invalid combination of args.  Provide either config_fqfn, config_dir + config_fn, or app_name + config_fn')
             raise ValueError, 'invalid config args'
 
-        self.config_schema = config_schema
-
         if not os.path.isfile(self.config_fqfn):
             self.logger.critical('config file missing: %s' % self.config_fqfn)
             raise IOError, 'config file missing, was expecting %s' % self.config_fqfn
 
         with open(self.config_fqfn, 'r') as f:
-            self.config    = yaml.safe_load(f)
-            self.log_level = dcoaler(self.config, 'log_level', None)
+            self.config_file = yaml.safe_load(f)
+
+        self._post_add_maintenance(self.config_file)
+
+
+
+    def add_env_vars(self, var_list=None, key_to_lower=False):
+        assert key_to_lower in [True, False]
+
+        if var_list:
+            my_var_list = var_list
+        else:
+            if not self.config_schema:
+                raise ValueError, 'add_env_vars called without var_list or prior config_schema'
+            else:
+                my_var_list = self._get_schema_keys()
+
+        mylist = os.environ.items()
+
+        for var_tup in mylist:
+            if var_tup[0] in my_var_list:
+                if key_to_lower:
+                    self.config_env[var_tup[0].lower()] = var_tup[1]
+                else:
+                    self.config_env[var_tup[0]] = var_tup[1]
+
+        self._post_add_maintenance(self.config_env)
+
+
+
+    def _get_schema_keys(self):
+        if self.config_schema:
+            keylist = [var.upper() for var in self.config_schema['properties'].keys()]
+            return keylist
+        else:
+            return []
+
+
+    def add_namespace(self, args):
+        self.config_namespace.update(vars(args))
+        self._post_add_maintenance(self.config_namespace)
+
+
+
+    def add_iterable(self, user_iter):
+
+        self.config_dict.update(user_iter)
+        self._post_add_maintenance(self.config_dict)
+
+
+    def validate(self):
 
         if self.config_schema:
-            self._validate()
-
-        # add config to namespace
-        # now config items can be access either via dict or namespace
-        self.__dict__.update(self.config)
-
-
-
-    def _validate(self):
-
-        try:
-            valid.validate(self.config, self.config_schema)
-        except valid.FieldValidationError as e:
-            self.logger.critical('Config error on field %s' % e.fieldname)
-            self.logger.critical(e)
-            sys.exit(1)
-
-
-
-
+            try:
+                valid.validate(self.config, self.config_schema)
+            except valid.FieldValidationError as e:
+                self.logger.critical('Config error on field %s' % e.fieldname)
+                self.logger.critical(e)
+                raise ValueError, 'config error: %s' % e
+            else:
+                return True
+        else:
+            return None
 
 
