@@ -8,7 +8,7 @@ def read(*paths):
     with open(os.path.join(*paths), 'r') as f:
         return f.read()
 
-version          = "0.1.4"
+version          = "0.1.5"
 DESCRIPTION      = 'A library of command line utilities'
 
 setup(name             = 'cletus'     ,
@@ -30,7 +30,8 @@ setup(name             = 'cletus'     ,
             'Operating System :: POSIX'                              ,
             'Topic :: Utilities'
             ],
-      scripts      = [],
+      data_files   = ['example/cletus_archiver_config.yml'],
+      scripts      = ['cletus_archiver.py'],
       install_requires     = ['appdirs     == 1.3.0' ,
                               'envoy       == 0.0.2' ,
                               'tox         == 1.7.1' ,
