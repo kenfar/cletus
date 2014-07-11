@@ -71,31 +71,31 @@ class ConfigManager(object):
                  log_name='__main__',
                  namespace_access=True):
 
-        self.namespace_access = namespace_access
+        self.cm_namespace_access = namespace_access
 
         # set up logging:
-        self.logger   = logging.getLogger('%s.cletus_config' % log_name)
+        self.cm_logger   = logging.getLogger('%s.cletus_config' % log_name)
         # don't print to sys.stderr if no parent logger has been set up:
         # logging.getLogger(log_name).addHandler(logging.NullHandler())
-        self.logger.debug('ConfigManager starting now')
+        self.cm_logger.debug('ConfigManager starting now')
 
-        self.config_schema = config_schema
+        self.cm_config_schema    = config_schema
+        self.cm_config_fqfn      = None
 
-        self.config_file      = {}
-        self.config_env       = {}
-        self.config_namespace = {}
-        self.config_dict      = {}
-        self.config           = {}
+        self.cm_config_file      = {}
+        self.cm_config_env       = {}
+        self.cm_config_namespace = {}
+        self.cm_config_iterable  = {}
+        self.cm_config           = {}
 
         # store an original copy of variable names to use to protect
         # from updating by bunch later on.
-        self.orig_dict_keys   = self.__dict__.keys()
+        self.cm_orig_dict_keys   = self.__dict__.keys()
 
-        
+
     def _bunch(self):
-        #self.__dict__.update(adict)
-        for key, val in self.config.items():
-            if key in self.orig_dict_keys:
+        for key, val in self.cm_config.items():
+            if key in self.cm_orig_dict_keys:
                 raise ValueError, 'config key is a reserved value: %s' % key
             elif key in dir(ConfigManager):
                 raise ValueError, 'config key is a reserved value: %s' % key
@@ -103,11 +103,10 @@ class ConfigManager(object):
                 self.__dict__[key] = val
 
     def _post_add_maintenance(self, config):
-        self.config.update(config)
-        self.log_level = dcoaler(self.config, 'log_level', None)
-        if self.namespace_access:
-           n = self._bunch()
-
+        self.cm_config.update(config)
+        self.log_level = dcoaler(self.cm_config, 'log_level', None)
+        if self.cm_namespace_access:
+            self._bunch()
 
 
     def add_file(self,
@@ -118,26 +117,26 @@ class ConfigManager(object):
 
         # figure out the config_fqfn:
         if config_fqfn:
-            self.config_fqfn = config_fqfn
-            self.logger.debug('using config_fqn: %s' % config_fqfn)
+            self.cm_config_fqfn = config_fqfn
+            self.cm_logger.debug('using config_fqn: %s' % config_fqfn)
         elif config_dir and config_fn:
-            self.config_fqfn = os.path.join(config_dir, config_fn)
-            self.logger.debug('using config_dir & config_fn: %s' % config_fqfn)
+            self.cm_config_fqfn = os.path.join(config_dir, config_fn)
+            self.cm_logger.debug('using config_dir & config_fn: %s' % config_fqfn)
         elif app_name and config_fn:
-            self.config_fqfn = os.path.join(appdirs.user_config_dir(app_name), config_fn)
-            self.logger.debug('using app_name & config_fn: %s' % config_fqfn)
+            self.cm_config_fqfn = os.path.join(appdirs.user_config_dir(app_name), config_fn)
+            self.cm_logger.debug('using app_name & config_fn: %s' % config_fqfn)
         else:
-            self.logger.critical('Invalid combination of args.  Provide either config_fqfn, config_dir + config_fn, or app_name + config_fn')
+            self.cm_logger.critical('Invalid combination of args.  Provide either config_fqfn, config_dir + config_fn, or app_name + config_fn')
             raise ValueError, 'invalid config args'
 
-        if not os.path.isfile(self.config_fqfn):
-            self.logger.critical('config file missing: %s' % self.config_fqfn)
-            raise IOError, 'config file missing, was expecting %s' % self.config_fqfn
+        if not os.path.isfile(self.cm_config_fqfn):
+            self.cm_logger.critical('config file missing: %s' % self.cm_config_fqfn)
+            raise IOError, 'config file missing, was expecting %s' % self.cm_config_fqfn
 
-        with open(self.config_fqfn, 'r') as f:
-            self.config_file = yaml.safe_load(f)
+        with open(self.cm_config_fqfn, 'r') as f:
+            self.cm_config_file = yaml.safe_load(f)
 
-        self._post_add_maintenance(self.config_file)
+        self._post_add_maintenance(self.cm_config_file)
 
 
 
@@ -146,7 +145,7 @@ class ConfigManager(object):
 
         final_key_list = key_list or self._get_schema_keys()
         if not final_key_list:
-            raise ValueError, 'add_env_vars called without key_list or config_schema'
+            raise ValueError, 'add_env_vars called without key_list or cm_config_schema'
 
         # get list of tuples of environment variables
         env_list = os.environ.items()
@@ -154,42 +153,41 @@ class ConfigManager(object):
         for env_tup in env_list:
             if env_tup[0] in final_key_list:
                 if key_to_lower:
-                    self.config_env[env_tup[0].lower()] = env_tup[1]
+                    self.cm_config_env[env_tup[0].lower()] = env_tup[1]
                 else:
-                    self.config_env[env_tup[0]] = env_tup[1]
+                    self.cm_config_env[env_tup[0]] = env_tup[1]
 
-        self._post_add_maintenance(self.config_env)
-
+        self._post_add_maintenance(self.cm_config_env)
 
 
     def _get_schema_keys(self):
-        if self.config_schema:
-            keylist = [var.upper() for var in self.config_schema['properties'].keys()]
+        if self.cm_config_schema:
+            keylist = [var.upper() for var in self.cm_config_schema['properties'].keys()]
             return keylist
         else:
             return []
 
 
     def add_namespace(self, args):
-        self.config_namespace.update(vars(args))
-        self._post_add_maintenance(self.config_namespace)
+        self.cm_config_namespace.update(vars(args))
+        self._post_add_maintenance(self.cm_config_namespace)
 
 
 
     def add_iterable(self, user_iter):
 
-        self.config_dict.update(user_iter)
-        self._post_add_maintenance(self.config_dict)
+        self.cm_config_iterable.update(user_iter)
+        self._post_add_maintenance(self.cm_config_iterable)
 
 
     def validate(self):
 
-        if self.config_schema:
+        if self.cm_config_schema:
             try:
-                valid.validate(self.config, self.config_schema)
+                valid.validate(self.cm_config, self.cm_config_schema)
             except valid.FieldValidationError as e:
-                self.logger.critical('Config error on field %s' % e.fieldname)
-                self.logger.critical(e)
+                self.cm_logger.critical('Config error on field %s' % e.fieldname)
+                self.cm_logger.critical(e)
                 raise ValueError, 'config error: %s' % e
             else:
                 return True
