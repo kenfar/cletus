@@ -38,8 +38,8 @@ class Test_add_file(object):
     def test_basic(self):
         self.config_man = mod.ConfigManager()
         self.config_man.add_file(config_dir=self.temp_dir, config_fn='config.yml')
-        assert self.config_man.config_file['foo'] == 'bar'
-        assert self.config_man.config['foo'] == 'bar'
+        assert self.config_man.cm_config_file['foo'] == 'bar'
+        assert self.config_man.cm_config['foo'] == 'bar'
 
 
 class Test_add_env_vars(object):
@@ -61,16 +61,16 @@ class Test_add_env_vars(object):
 
     def test_add_vars_using_arg_list(self):
         self.config_man.add_env_vars(self.var_list)
-        pp(self.config_man.config_env)
-        assert self.config_man.config_env['CLETUS_FOO'] == 'bar'
-        assert 'PYTHONPATH' in self.config_man.config_env
+        pp(self.config_man.cm_config_env)
+        assert self.config_man.cm_config_env['CLETUS_FOO'] == 'bar'
+        assert 'PYTHONPATH' in self.config_man.cm_config_env
 
     def test_add_vars_using_schema(self):
         config_man = mod.ConfigManager(config_schema=self.config_schema)
         config_man.add_env_vars()
-        pp(config_man.config_env)
-        assert config_man.config_env['CLETUS_FOO'] == 'bar'
-        assert 'PYTHONPATH' in config_man.config_env
+        pp(config_man.cm_config_env)
+        assert config_man.cm_config_env['CLETUS_FOO'] == 'bar'
+        assert 'PYTHONPATH' in config_man.cm_config_env
 
     def test_add_vars_using_no_keys(self):
         config_man = mod.ConfigManager()
@@ -79,14 +79,14 @@ class Test_add_env_vars(object):
 
     def test_add_vars_into_final_config(self):
         self.config_man.add_env_vars(self.var_list)
-        assert self.config_man.config_env['CLETUS_FOO'] \
-            == self.config_man.config['CLETUS_FOO']
+        assert self.config_man.cm_config_env['CLETUS_FOO'] \
+            == self.config_man.cm_config['CLETUS_FOO']
 
     def test_transform_to_lower(self):
         self.config_man.add_env_vars(self.var_list, key_to_lower=True)
-        pp(self.config_man.config_env)
-        assert self.config_man.config_env['cletus_foo'] == 'bar'
-        assert self.config_man.config['cletus_foo']     == 'bar'
+        pp(self.config_man.cm_config_env)
+        assert self.config_man.cm_config_env['cletus_foo'] == 'bar'
+        assert self.config_man.cm_config['cletus_foo']     == 'bar'
 
 
 class Test_get_schema_keys(object):
@@ -119,20 +119,20 @@ class Test_add_iterable(object):
         sample_dict = {}
         sample_dict['foo'] = 'bar'
         self.config_man.add_iterable(sample_dict)
-        assert self.config_man.config_dict['foo'] == 'bar'
-        assert self.config_man.config['foo'] == 'bar'
+        assert self.config_man.cm_config_iterable['foo'] == 'bar'
+        assert self.config_man.cm_config['foo'] == 'bar'
 
     def test_list_of_tuples(self):
         sample_dict = []
         sample_dict.append(('foo','bar'))
         self.config_man.add_iterable(sample_dict)
-        assert self.config_man.config_dict['foo'] == 'bar'
-        assert self.config_man.config['foo'] == 'bar'
+        assert self.config_man.cm_config_iterable['foo'] == 'bar'
+        assert self.config_man.cm_config['foo'] == 'bar'
 
     def test_empty_dict(self):
         sample_dict = {}
         self.config_man.add_iterable(sample_dict)
-        assert self.config_man.config.keys() == []
+        assert self.config_man.cm_config.keys() == []
 
 
 class Test_add_namespace(object):
@@ -150,17 +150,17 @@ class Test_add_namespace(object):
 
     def test_basic(self):
         self.config_man.add_namespace(self.args)
-        assert self.config_man.config_namespace['foo'] == 'bar'
-        assert self.config_man.config['foo']        == 'bar'
-        assert self.config_man.config['pythonpath'] == ''
-        assert self.config_man.config['logdir']     is None
+        assert self.config_man.cm_config_namespace['foo'] == 'bar'
+        assert self.config_man.cm_config['foo']        == 'bar'
+        assert self.config_man.cm_config['pythonpath'] == ''
+        assert self.config_man.cm_config['logdir']     is None
 
     def test_empty_namespace(self):
         parser     = argparse.ArgumentParser()
         args       = parser.parse_args([])
         config_man = mod.ConfigManager()
         self.config_man.add_namespace(args)
-        assert config_man.config.keys() == []
+        assert config_man.cm_config.keys() == []
 
 
 
@@ -192,10 +192,10 @@ class Test_combination_of_adds(object):
         args       = parser.parse_args([])
         self.config_man.add_namespace(args)
 
-        assert sorted(self.config_man.config.keys())  == sorted(['foo','baz','bugs'])
-        assert self.config_man.config['foo']  == 'notabar'
-        assert self.config_man.config['baz']  == 'spaz'
-        assert self.config_man.config['bugs'] == 'bear'
+        assert sorted(self.config_man.cm_config.keys())  == sorted(['foo','baz','bugs'])
+        assert self.config_man.cm_config['foo']  == 'notabar'
+        assert self.config_man.cm_config['baz']  == 'spaz'
+        assert self.config_man.cm_config['bugs'] == 'bear'
 
 
 class Test_validation(object):
@@ -242,13 +242,13 @@ class Test_access_via_namespace(object):
         sample_dict = {}
         sample_dict['foo'] = 'bar'
         self.config_man.add_iterable(sample_dict)
-        assert self.config_man.config_dict['foo'] == 'bar'
-        assert self.config_man.config['foo'] == 'bar'
+        assert self.config_man.cm_config_iterable['foo'] == 'bar'
+        assert self.config_man.cm_config['foo'] == 'bar'
         assert self.config_man.foo == 'bar'
 
     def test_invalid_variable_name(self):
         sample_dict = {}
-        sample_dict['config'] = 'bar'
+        sample_dict['cm_config'] = 'bar'
         with pytest.raises(ValueError):
             self.config_man.add_iterable(sample_dict)
 
