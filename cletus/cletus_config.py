@@ -141,25 +141,22 @@ class ConfigManager(object):
 
 
 
-    def add_env_vars(self, var_list=None, key_to_lower=False):
+    def add_env_vars(self, key_list=None, key_to_lower=False):
         assert key_to_lower in [True, False]
 
-        if var_list:
-            my_var_list = var_list
-        else:
-            if not self.config_schema:
-                raise ValueError, 'add_env_vars called without var_list or prior config_schema'
-            else:
-                my_var_list = self._get_schema_keys()
+        final_key_list = key_list or self._get_schema_keys()
+        if not final_key_list:
+            raise ValueError, 'add_env_vars called without key_list or config_schema'
 
-        mylist = os.environ.items()
+        # get list of tuples of environment variables
+        env_list = os.environ.items()
 
-        for var_tup in mylist:
-            if var_tup[0] in my_var_list:
+        for env_tup in env_list:
+            if env_tup[0] in final_key_list:
                 if key_to_lower:
-                    self.config_env[var_tup[0].lower()] = var_tup[1]
+                    self.config_env[env_tup[0].lower()] = env_tup[1]
                 else:
-                    self.config_env[var_tup[0]] = var_tup[1]
+                    self.config_env[env_tup[0]] = env_tup[1]
 
         self._post_add_maintenance(self.config_env)
 
