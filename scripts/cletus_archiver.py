@@ -8,15 +8,14 @@ import time
 import argparse
 
 import envoy
-import appdirs
 
+# only here to allow running out of dev
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import cletus.cletus_log    as log
 import cletus.cletus_job    as job
 import cletus.cletus_supp   as supp
 import cletus.cletus_config as conf
 
-import cletus_archiver_lib  as lib
 
 logger    = None
 MAX_FILES = 55
@@ -30,7 +29,8 @@ def main():
     args       = get_args()
     setup_logging(args.log_to_console, args.log_level)
     logger.info('cletus_archiver - starting')
-    config     = setup_config(args.config)
+    config     = setup_config(args)
+    logger.setLevel(config.log_level or 'DEBUG')
     jobcheck   = check_if_already_running()
     check_if_suppressed()
 
@@ -46,7 +46,7 @@ def main():
 
 def process_all_the_files():
 
-    file_compressor = lib.FileCompressor(__name__)
+    file_compressor = FileCompressor()
 
     for i, fn in enumerate(glob.glob('/tmp/*')):
 
@@ -69,36 +69,26 @@ def process_all_the_files():
         else:
             action = 'good'
 
-        logger.debug('%-20.20s - %s - %s' % (abbrev_fn(fn), file_time_string, action))
+        logger.debug('%-20.20s - %s - %s' % (abbreviate(fn), file_time_string, action))
 
 
 
 class FileCompressor(object):
 
-    def __init__(self, log_name):
-
-        #self.logger = logging.getLogger('__main__.lib')
-        #self.logger = logging.getLogger(__name__)
-        #self.logger = logging.getLogger()
-        #print 'lib name: %s' % __name__
-        #print 'all logger names: '
-        #print logging.Logger.manager.loggerDict.keys()
-
-        self.logger = logging.getLogger('%s.FileCompressor' % log_name)
-        self.logger.debug('cletus_archiver_lib starting')
-
+    def __init__(self):
+        logger.debug('cletus_archiver_lib starting')
 
     def compress(self, fn):
         cmd   = '''gzip %s''' % fn
         r     = envoy.run(cmd)
         if r.status_code:
-            self.logger.error('%s compression failed with status %d' % (fn, r.status_code))
+            logger.error('%s compression failed with status %d' % (fn, r.status_code))
         else:
-            self.logger.debug('%s compressed' % fn)
+            logger.debug('%s compressed' % fn)
 
 
 
-def abbrev_fn(fn):
+def abbreviate(fn):
     if len(fn) > 37:
         abbrev_fn = '%s.....' % fn[:37]
         logger.debug('filename truncated: %s' % abbrev_fn)
@@ -124,21 +114,25 @@ def setup_logging(log_to_console, log_level):
 
 
 
-def setup_config(args_config):
+def setup_config(args):
 
     config_schema = {'type': 'object',
                      'properties': {
-                       'dir':  {'required': True,
-                                'type':     'string'},
-                       'log_level': {'enum': ['DEBUG','INFO','WARNING','ERROR','CRITICAL']} },
+                       'dir':       {'required': True,
+                                     'type':     'string'},
+                       'log_level': {'enum': ['DEBUG','INFO','WARNING','ERROR','CRITICAL']} ,
+                       'config_fqfn': {'required': False,
+                                       'type':     'string'},
+                       'log_to_console': {'required': False,
+                                          'type':     'boolean'} },
                      'additionalProperties': False
                     }
-
-    config = conf.ConfigManager(app_name=APP_NAME,
-                                config_fqfn=args_config,
-                                config_fn='main.yml',
-                                config_schema=config_schema,
-                                log_name=__name__)
+    config = conf.ConfigManager(config_schema)
+    config.add_file(app_name=APP_NAME,
+                    config_fqfn=args.config_fqfn,
+                    config_fn='main.yml')
+    config.add_namespace(args)
+    config.validate()
     return config
 
 
@@ -146,23 +140,20 @@ def setup_config(args_config):
 
 def check_if_already_running():
 
-    jobcheck  = job.JobCheck(app_name=APP_NAME,
-                             log_name=__name__)
-    if jobcheck.old_job_age > 0:
-        logger.warning('Pgm is already running - this instance will be terminated')
-        logger.warning('old job has been running %d seconds' % jobcheck.old_job_age)
-        sys.exit(0)
-    else:
+    jobcheck  = job.JobCheck(app_name=APP_NAME)
+    if jobcheck.lock_pidfile():
         logger.info('JobCheck has passed')
         return jobcheck
+    else:
+        logger.warning('Pgm is already running - this instance will be terminated')
+        sys.exit(0)
 
 
 
 def check_if_suppressed():
 
-    suppcheck  = supp.SuppressCheck(app_name=APP_NAME,
-                                    log_name=__name__)
-    if suppcheck.suppressed():
+    suppcheck  = supp.SuppressCheck(app_name=APP_NAME)
+    if suppcheck.suppressed(suppress_name=APP_NAME):
         logger.warning('Pgm has been suppressed - this instance will be terminated.')
         sys.exit(0)
     else:
@@ -182,10 +173,7 @@ def get_args():
 
     parser.add_argument('--log-level',
                         choices=['debug','info','warning','error', 'critical'])
-
-    parser.add_argument('--config')
-
-
+    parser.add_argument('--config-fqfn')
     parser.add_argument('--console-log',
                         action='store_true',
                         default=True,
@@ -193,22 +181,13 @@ def get_args():
     parser.add_argument('--no-console-log',
                         action='store_false',
                         dest='log_to_console')
-
-
     args = parser.parse_args()
-
 
     return args
 
 
 
-
-
-
-
-
-
 if __name__ == '__main__':
-   sys.exit(main())
+    sys.exit(main())
 
 
