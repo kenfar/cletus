@@ -1,4 +1,38 @@
 #!/usr/bin/env  python
+""" Cletus_archiver.py is a sample program to demonstrate the use of
+    cletus.
+
+    Functionally, it is extremely simple - it just compresses
+    files within a directory.  Keeping it simple ensures that its
+    functionality doesn't obscure the use of cletus.  And while a script
+    this simple could be done with a one-line bash command in cron, this
+    provides better logging, better configurability, and better
+    reliability.
+
+    Features provided by cletus include:
+
+    - cletus_config allows the user to control the directory, the files
+      chosen, and other runtime characteristics through:
+        - config file
+        - environmental variables
+        - command line arguments
+
+    - cletus_job allows the user to schedule the job to run
+      automatically, and not worry that two may some day be running
+      simultaneously with unpredictable or adverse effects.
+
+    - cletus_log keeps the logging code simple while providing commonly
+      needed features beyond the logging basic config.
+
+    - cletus_supp allows the user to suppress the running of the program
+      through a very simple mechanism, without permanently altering its
+      crontab entry.
+
+    See the file "LICENSE" for the full license governing use of this file.
+    Copyright 2013, 2014 Ken Farmer
+"""
+
+#--------------------------------------------------------------
 
 
 import sys
@@ -27,12 +61,16 @@ def main():
 
     # initialization
     args       = get_args()
+
     setup_logging(args.log_to_console, args.log_level)
     logger.info('cletus_archiver - starting')
+
     config     = setup_config(args)
     logger.setLevel(config.log_level or 'DEBUG')
-    jobcheck   = check_if_already_running()
-    check_if_suppressed()
+
+    jobcheck   = exit_if_already_running()
+
+    exit_if_suppressed()
 
     # run the process:
     process_all_the_files()
@@ -91,7 +129,6 @@ class FileCompressor(object):
 def abbreviate(fn):
     if len(fn) > 37:
         abbrev_fn = '%s.....' % fn[:37]
-        logger.debug('filename truncated: %s' % abbrev_fn)
         return abbrev_fn
     else:
         return fn
@@ -138,7 +175,7 @@ def setup_config(args):
 
 
 
-def check_if_already_running():
+def exit_if_already_running():
 
     jobcheck  = job.JobCheck(app_name=APP_NAME)
     if jobcheck.lock_pidfile():
@@ -150,10 +187,26 @@ def check_if_already_running():
 
 
 
-def check_if_suppressed():
+def exit_if_suppressed():
+    """This is a helper function to keep the bulk of this check out of main().
+       It runs cletus_supp's SuppressCheck class and provides it with the application
+       name defined above.   Since no config_dir was provided, SuppressCheck will look
+       for a config file in the xdg standard location.  On linux this will be:
+            $HOME/.config/<APP_NAME>/suppress
+
+       Every time suppcheck.suppressed is called it will look for suppression files
+       within the suppression directory.  Since no specific suppression_name was
+       provided as an argument, it will default to using the app_name with this
+       convention:
+            $HOME/.config/<APP_NAME>/suppress/name-<APP_NAME>.suppress
+
+       Note that this function could be called at checkpoints by this program, in
+       order to identify that it should shut-down gracefully in the middle of long-
+       running processes.
+    """
 
     suppcheck  = supp.SuppressCheck(app_name=APP_NAME)
-    if suppcheck.suppressed(suppress_name=APP_NAME):
+    if suppcheck.suppressed():
         logger.warning('Pgm has been suppressed - this instance will be terminated.')
         sys.exit(0)
     else:
