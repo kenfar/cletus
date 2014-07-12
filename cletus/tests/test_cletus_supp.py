@@ -19,10 +19,8 @@ import pytest
 from pprint import pprint as pp
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-#sys.path.insert(0, '../')
 
 import cletus.cletus_supp as  mod
-#import cletus_supp as  mod
 
 print '\nNote: code being tested will produce some messages to ignore'
 
@@ -95,9 +93,9 @@ class TestSuppressCheck(object):
        write_suppression_file(self.temp_dir, 'foo')
        suppcheck = mod.SuppressCheck(self.app_name,
                                      config_dir=self.temp_parent_dir)
-       assert suppcheck.suppressed()      is False
        assert suppcheck.suppressed('bar') is False
        assert suppcheck.suppressed('foo') is True
+       assert suppcheck.suppressed()      is True
 
    def test_invalid_suppression_file(self):
        """ Confirm invalid files are handled right.
@@ -105,9 +103,10 @@ class TestSuppressCheck(object):
        suppress_fqfn = os.path.join(self.temp_dir, 'blah.suppress')
        with open(suppress_fqfn, 'w') as f:
            f.write('')
+       suppcheck = mod.SuppressCheck(self.app_name,
+                                     config_dir=self.temp_parent_dir)
        with pytest.raises(ValueError):
-           suppcheck = mod.SuppressCheck(self.app_name,
-                                         config_dir=self.temp_parent_dir)
+            suppcheck.suppressed()
 
 
 
