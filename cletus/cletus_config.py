@@ -180,11 +180,20 @@ class ConfigManager(object):
         self._post_add_maintenance(self.cm_config_iterable)
 
 
-    def validate(self):
+    def validate(self, config_type='config', schema=None):
+
+        config_schema = schema or self.cm_config_schema
+
+        config_types = {'config': self.cm_config,
+                        'config_file': self.cm_config_file,
+                        'config_env': self.cm_config_env,
+                        'config_namespace': self.cm_config_namespace,
+                        'config_iterable': self.cm_config_iterable}
+        assert config_type in config_types
 
         if self.cm_config_schema:
             try:
-                valid.validate(self.cm_config, self.cm_config_schema)
+                valid.validate(config_types[config_type], config_schema)
             except valid.FieldValidationError as e:
                 self.cm_logger.critical('Config error on field %s' % e.fieldname)
                 self.cm_logger.critical(e)
@@ -192,6 +201,6 @@ class ConfigManager(object):
             else:
                 return True
         else:
-            return None
+            return False
 
 
