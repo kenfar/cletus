@@ -53,13 +53,14 @@ import cletus.cletus_config as conf
 
 logger    = None
 MAX_FILES = 55
-APP_NAME  = 'cletus_example'
+APP_NAME  = 'cletus_archiver'
 
 
 
 def main():
 
-    # initialization
+    # initialization - see the functions used here for details on the
+    # cletus methods.
     args       = get_args()
 
     setup_logging(args.log_to_console, args.log_level)
@@ -142,6 +143,22 @@ def get_file_times(file_name):
 
 
 def setup_logging(log_to_console, log_level):
+    """This is a helper function to keep the bulk of the LogManager and
+       these comments out of the main().
+
+       There's nothing really special about the LogManager - it just packages
+       common log configuration for you.  It includes:
+          - logging to console & file by default
+          - log file rotation
+          - log formatting with timestamp, application name, severity level
+            & message
+          - an exceptionhook to log any uncaught exceptions
+          - log dir creation if necessary
+
+       LogManager accepts arguments for the log_dir, but if not provided it will
+       use the app_name to look up the cache dir using the XDG standard.  On linux:
+          - $HOME/.cache/<APP_NAME>/log
+    """
     global logger
     cl_logger  = log.LogManager(app_name=APP_NAME,
                                 log_name=__name__,
@@ -152,7 +169,39 @@ def setup_logging(log_to_console, log_level):
 
 
 def setup_config(args):
+    """This is a helper function to keep the bulk of the ConfigManager and
+       these comments out of the main().
 
+       ConfigManager is being used to first add config items from a file,
+       then from the argparse namespace.   Alternatively, we could add:
+          - multiple config files (eg, server config plus this app config)
+          - environmental variables
+          - arguments & options from optparse, etc that uses dictionaries
+            instead of namespaces
+          - config items from a resource like zookeeper that are loaded
+            via the add_iterable ConfigManger method.
+
+       The order determines the precidence.  Since args are added after the
+       config file any matching items will result in args overriding the
+       config file.
+
+       Validation is performed using validictory.  This is optional, but
+       recommended.  All config items are stored in two places:  one
+       dedicated to that method, and one consolidated dictionary:
+          - cm_config_iterable
+          - cm_config_file
+          - cm_config_namespace
+          - cm_config_env
+          - cm_config           - the consolidated config
+       Any of these dictionaries can be used for validation, just pass in
+       its name (just drop the cm_ prefix) for the config_type argument.
+       And you might want to provide a different schema for different configs,
+       just pass that it using the schema argument.
+
+       More info on Validictory is here:
+          - https://readthedocs.org/projects/validictory/
+       Note that any validation tool can be easily used with the dictionaries.
+    """
     config_schema = {'type': 'object',
                      'properties': {
                        'dir':       {'required': True,
@@ -176,7 +225,21 @@ def setup_config(args):
 
 
 def exit_if_already_running():
+    """This is a helper function to keep the bulk of the cletus_job check, and
+       these comments out of main().
 
+       Because it's providing the APP_NAME, JobCheck will use the XDG standard
+       for the location of the cache file.  On linux this would be:
+            $HOME/.cache/<APP_NAME>/jobs
+       Alternatively, we could have passed in a specific pid_dir, which would
+       get used instead of the XDG dir.
+
+       Since we didn't pass in a log_name, it will default to __main__.
+
+       lock_pidfile defaults to 60 seconds for wait time, checking every 0.5
+       seconds.  We could pass in the number of seconds to this function if we
+       want to override that.
+    """
     jobcheck  = job.JobCheck(app_name=APP_NAME)
     if jobcheck.lock_pidfile():
         logger.info('JobCheck has passed')
@@ -189,7 +252,7 @@ def exit_if_already_running():
 
 def exit_if_suppressed():
     """This is a helper function to keep the bulk of this check out of main().
-       It runs cletus_supp's SuppressCheck class and provides it with the application
+       It runs the cletus_supp SuppressCheck class and provides it with the application
        name defined above.   Since no config_dir was provided, SuppressCheck will look
        for a config file in the xdg standard location.  On linux this will be:
             $HOME/.config/<APP_NAME>/suppress
@@ -216,6 +279,15 @@ def exit_if_suppressed():
 
 
 def get_args():
+    """" Returns all options & arguments for program.
+
+         Uses argparse, but could alternatively use optparse, getopt, docopt, etc.
+
+         Notice that validation is occuring within this process - and this validation
+         will be done again using the ConfigManager and Validictory.  Validation in
+         either location is optional, and this is redundant.  However, there are some
+         benefits to doing it here as well - mostly in the form of better usability.
+    """
 
     usage  = """Cletus sample command-line application that demonstrates
                 how to use the cletus libraries.
