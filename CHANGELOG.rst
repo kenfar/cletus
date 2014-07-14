@@ -1,3 +1,11 @@
+v1.0.6 - 2014-07
+================
+
+-  cletus\_archiver.py
+
+   -  added comments
+   -  added config to setup
+
 v1.0.5 - 2014-07
 ================
 
