@@ -30,7 +30,7 @@ setup(name             = 'cletus'     ,
             'Operating System :: POSIX'                              ,
             'Topic :: Utilities'
             ],
-      data_files   = ['example/cletus_archiver_config.yml'],
+      data_files   = [('/tmp', ['example/cletus_archiver_config.yml'])],
       scripts      = ['scripts/cletus_archiver.py'],
       install_requires     = ['appdirs     == 1.3.0' ,
                               'envoy       == 0.0.2' ,
