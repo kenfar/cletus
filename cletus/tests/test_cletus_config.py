@@ -47,7 +47,7 @@ class Test_add_env_vars(object):
     def setup_method(self, method):
         self.config_schema = {'type': 'object',
                               'properties': {
-                                  'pythonpath': '',
+                                  'home':       '',
                                   'dir':        '',
                                   'type':       'string',
                                   'cletus_foo': 'foo1'},
@@ -57,20 +57,20 @@ class Test_add_env_vars(object):
         os.environ['CLETUS_FOO'] = 'bar'
         self.var_list = []
         self.var_list.append('CLETUS_FOO')
-        self.var_list.append('PYTHONPATH')
+        self.var_list.append('HOME')
 
     def test_add_vars_using_arg_list(self):
         self.config_man.add_env_vars(self.var_list)
         pp(self.config_man.cm_config_env)
         assert self.config_man.cm_config_env['CLETUS_FOO'] == 'bar'
-        assert 'PYTHONPATH' in self.config_man.cm_config_env
+        assert 'HOME' in self.config_man.cm_config_env
 
     def test_add_vars_using_schema(self):
         config_man = mod.ConfigManager(config_schema=self.config_schema)
         config_man.add_env_vars()
         pp(config_man.cm_config_env)
         assert config_man.cm_config_env['CLETUS_FOO'] == 'bar'
-        assert 'PYTHONPATH' in config_man.cm_config_env
+        assert 'HOME' in config_man.cm_config_env
 
     def test_add_vars_using_no_keys(self):
         config_man = mod.ConfigManager()
