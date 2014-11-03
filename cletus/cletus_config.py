@@ -133,6 +133,7 @@ class ConfigManager(object):
             self.cm_logger.critical('config file missing: %s' % self.cm_config_fqfn)
             raise IOError, 'config file missing, was expecting %s' % self.cm_config_fqfn
 
+        self.cm_config_file = {}
         with open(self.cm_config_fqfn, 'r') as f:
             self.cm_config_file = yaml.safe_load(f)
 
@@ -142,6 +143,7 @@ class ConfigManager(object):
 
     def add_env_vars(self, key_list=None, key_to_lower=False):
         assert key_to_lower in [True, False]
+        self.cm_config_env = {}
 
         final_key_list = key_list or self._get_schema_keys()
         if not final_key_list:
@@ -169,13 +171,14 @@ class ConfigManager(object):
 
 
     def add_namespace(self, args):
+        self.cm_config_namespace = {}
         self.cm_config_namespace.update(vars(args))
         self._post_add_maintenance(self.cm_config_namespace)
 
 
 
     def add_iterable(self, user_iter):
-
+        self.cm_config_iterable = {}
         self.cm_config_iterable.update(user_iter)
         self._post_add_maintenance(self.cm_config_iterable)
 
