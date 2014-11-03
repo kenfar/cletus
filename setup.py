@@ -8,7 +8,7 @@ def read(*paths):
     with open(os.path.join(*paths), 'r') as f:
         return f.read()
 
-version          = "1.0.6"
+version          = "1.0.7"
 DESCRIPTION      = 'A library of command line utilities'
 
 setup(name             = 'cletus'     ,
@@ -37,6 +37,6 @@ setup(name             = 'cletus'     ,
                               'tox         == 1.7.1' ,
                               'validictory == 0.9.3' ,
                               'pyyaml      == 3.11'  ,
-                              'pytest      == 2.5.2' ],
+                              'pytest      == 2.6.4' ],
       packages     = find_packages(),
      )
