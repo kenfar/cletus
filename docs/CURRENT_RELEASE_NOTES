@@ -1,5 +1,5 @@
 ===============================================================================
-Version:     1.0.6
+Version:     1.0.7
 Copyright 2014 Ken Farmer
 See the file "LICENSE" for the full license governing this code. 
 ===============================================================================
@@ -10,7 +10,7 @@ See the file "LICENSE" for the full license governing this code.
 Overall Testing status:
 ===============================================================================
     - test harness on python 2.7    - done
-    - test harness on python 2.6    - done
+    - test harness on python 2.6    - removed
     - run pylint                    - 
     - check coverage                - 
 
