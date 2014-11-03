@@ -134,6 +134,41 @@ class Test_add_iterable(object):
         self.config_man.add_iterable(sample_dict)
         assert self.config_man.cm_config.keys() == []
 
+class Test_add_iterables_twice(object):
+    """ Confirms that adding a second iterable doesn't include anything
+        from the first.
+    """
+
+    def setup_method(self, method):
+        self.config_man = mod.ConfigManager()
+
+    def test_dict(self):
+        # first update with all args:
+        first_dict = { 'foo':'bar',
+                       'baz':None  }
+        self.config_man.add_iterable(first_dict)
+
+        # next update from, say the config file.  We won't really run the add
+        # file job, lets fake it:
+        self.config_man.cm_config_file['baz'] = 'durp'
+        self.config_man._post_add_maintenance(self.config_man.cm_config_file)
+
+        # confirm that pretend-file-add did overwrite baz:
+        assert self.config_man.cm_config_iterable['baz'] is None
+        assert self.config_man.cm_config['foo'] == 'bar'
+        assert self.config_man.cm_config['baz'] == 'durp'
+        assert self.config_man.baz == 'durp'
+
+        # second update with just 1 args:
+        second_dict = { 'foo':'gorilla'}
+        self.config_man.add_iterable(second_dict)
+
+        # confirm that second iterative-add didn't pick up baz from first:
+        assert 'baz' not in self.config_man.cm_config_iterable
+        assert self.config_man.cm_config['foo'] == 'gorilla'
+        assert self.config_man.cm_config['baz'] == 'durp'
+        assert self.config_man.baz == 'durp'
+
 
 class Test_add_namespace(object):
 
