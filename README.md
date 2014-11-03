@@ -27,7 +27,7 @@ More info is on the cletus wiki here:
 
 #Dependencies
 
-   * Python 2.6 or Python 2.7
+   * Python 2.7
 
 
 

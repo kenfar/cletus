@@ -6,23 +6,24 @@ https://github.com/kenfar/cletus/wiki
 Installation
 ============
 
--  Using `pip <http://www.pip-installer.org/en/latest/>`_ (preferred) or
-   `easyinstall <http://peak.telecommunity.com/DevCenter/EasyInstall>`_:
+-  Using `pip <http://www.pip-installer.org/en/latest/>`__ (preferred)
+   or
+   `easyinstall <http://peak.telecommunity.com/DevCenter/EasyInstall>`__:
 
-   \ :sub:`~`\  $ pip install cletus $ easy\_install cletus \ :sub:`~`\ 
+   :sub:`~` $ pip install cletus $ easy\_install cletus :sub:`~`
 
 -  Or install manually from
-   `pypi <https://pypi.python.org/pypi/cletus>`_:
+   `pypi <https://pypi.python.org/pypi/cletus>`__:
 
-   \ :sub:`~`\  $ mkdir ~$ wget
+   :sub:`~` $ mkdir ~$ wget
    https://pypi.python.org/packages/source/d/cletus/cletus-0.1.tar.gz $
    tar -xvf easy\_install cletus $ cd ~-\* $ python setup.py install
-   \ :sub:`~`\ 
+   :sub:`~`
 
 Dependencies
 ============
 
--  Python 2.6 or Python 2.7
+-  Python 2.7
 
 Licensing
 =========
@@ -34,3 +35,4 @@ Copyright
 =========
 
 -  Copyright 2013, 2014 Ken Farmer
+
