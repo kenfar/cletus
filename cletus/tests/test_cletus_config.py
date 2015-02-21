@@ -14,10 +14,11 @@ import shutil
 import pytest
 import argparse
 import yaml
+from os.path import dirname, basename, isfile, isdir, exists
 
 from pprint import pprint as pp
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
 import cletus.cletus_config  as mod
 
 
@@ -134,11 +135,11 @@ class Test_add_iterable(object):
         self.config_man.add_iterable(sample_dict)
         assert self.config_man.cm_config.keys() == []
 
+
 class Test_add_iterables_twice(object):
     """ Confirms that adding a second iterable doesn't include anything
         from the first.
     """
-
     def setup_method(self, method):
         self.config_man = mod.ConfigManager()
 
@@ -234,26 +235,20 @@ class Test_combination_of_adds(object):
 
 
 class Test_validation(object):
-    """
-    """
-
     def setup_method(self, method):
         self.schema = {'type': 'object',
                        'properties': {
                          'foo':  {'required': True, 'type':     'string'},
                          'baz':  {'enum': ['spaz','fads']} },
-                       'additionalProperties': False
-                      }
+                       'additionalProperties': False }
         self.config_man = mod.ConfigManager(self.schema)
 
     def test_good_config(self):
 
-        #--- an iterable: dictionary ----
         sample_dict = {}
         sample_dict['foo']  = 'bar'
         sample_dict['baz']  = 'spaz'
         self.config_man.add_iterable(sample_dict)
-
         assert self.config_man.validate() is True
 
     def test_bad_config(self):
@@ -262,7 +257,6 @@ class Test_validation(object):
         sample_dict = {}
         sample_dict['baz']  = 'spaz'
         self.config_man.add_iterable(sample_dict)
-
         with pytest.raises(ValueError):
             self.config_man.validate()
 
