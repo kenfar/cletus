@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import os
+import os, uuid
+from pip.req import parse_requirements
 from setuptools import setup, find_packages
 
 def read(*paths):
@@ -8,11 +9,20 @@ def read(*paths):
     with open(os.path.join(*paths), 'r') as f:
         return f.read()
 
-version          = "1.0.7"
-DESCRIPTION      = 'A library of command line utilities'
+def get_version():
+    v1_rec = read("cletus/_version.py")
+    (v1_label, v1_version) = v1_rec.split('=')
+    v2_version = v1_version.strip()[1:-1]
+    assert v1_label.strip() == '__version__'
+    assert v2_version.count('.') == 2
+    return v2_version
 
-setup(name             = 'cletus'     ,
-      version          = version           ,
+VERSION          = get_version()
+DESCRIPTION      = 'A library of command line utilities'
+REQUIREMENTS     = [str(ir.req) for ir in parse_requirements('requirements.txt', session=uuid.uuid1())]
+
+setup(name             = 'cletus'          ,
+      version          = VERSION           ,
       description      = DESCRIPTION       ,
       long_description=(read('README.rst') + '\n\n' +
                         read('CHANGELOG.rst')),
@@ -30,13 +40,7 @@ setup(name             = 'cletus'     ,
             'Operating System :: POSIX'                              ,
             'Topic :: Utilities'
             ],
-      data_files   = [('/tmp', ['example/cletus_archiver_config.yml'])],
-      scripts      = ['scripts/cletus_archiver.py'],
-      install_requires     = ['appdirs     == 1.3.0' ,
-                              'envoy       == 0.0.2' ,
-                              'tox         == 1.7.1' ,
-                              'validictory == 0.9.3' ,
-                              'pyyaml      == 3.11'  ,
-                              'pytest      == 2.6.4' ],
-      packages     = find_packages(),
+      scripts          = ['scripts/cletus_archiver.py'],
+      install_requires = REQUIREMENTS,
+      packages         = find_packages(),
      )
