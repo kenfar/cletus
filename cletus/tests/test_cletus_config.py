@@ -143,7 +143,7 @@ class Test_add_iterables_twice(object):
     def setup_method(self, method):
         self.config_man = mod.ConfigManager()
 
-    def test_dict(self):
+    def test_second_iterable_overrides_entries_from_first(self):
         # first update with all args:
         first_dict = { 'foo':'bar',
                        'baz':None  }
@@ -170,6 +170,24 @@ class Test_add_iterables_twice(object):
         assert self.config_man.cm_config['baz'] == 'durp'
         assert self.config_man.baz == 'durp'
 
+    def test_nones_from_second_iterable_do_not_override_entries_from_first(self):
+        # first update with all args:
+        first_dict = { 'foo':'somefoo',
+                       'bar':'emptiness',
+                       'baz':None  }
+        self.config_man.add_iterable(first_dict)
+
+        # second update with just 1 args:
+        second_dict = { 'foo':None,
+                        'bar':'somebar',
+                        'baz':'somebaz'}
+        second_dict_subset = self.config_man.remove_null_overrides(second_dict)
+        self.config_man.add_iterable(second_dict_subset)
+
+        # confirm that second iterative-add didn't pick up baz from first:
+        assert self.config_man.cm_config['foo'] == 'somefoo'
+        assert self.config_man.cm_config['bar'] == 'somebar'
+        assert self.config_man.cm_config['baz'] == 'somebaz'
 
 class Test_add_namespace(object):
 
@@ -244,7 +262,6 @@ class Test_validation(object):
         self.config_man = mod.ConfigManager(self.schema)
 
     def test_good_config(self):
-
         sample_dict = {}
         sample_dict['foo']  = 'bar'
         sample_dict['baz']  = 'spaz'
@@ -252,7 +269,6 @@ class Test_validation(object):
         assert self.config_man.validate() is True
 
     def test_bad_config(self):
-
         #--- have omitted a required config item ---
         sample_dict = {}
         sample_dict['baz']  = 'spaz'
@@ -260,9 +276,127 @@ class Test_validation(object):
         with pytest.raises(ValueError):
             self.config_man.validate()
 
+    def test_type_checking_with_nulls(self):
+        self.schema = {'type': 'object',
+                       'properties': {
+                         'foo':  {'type':  ['integer', 'null']} } }
+        self.config_man = mod.ConfigManager(self.schema)
+
+        # confirm integers work
+        self.config_man.add_iterable({'foo':5})
+        self.config_man.validate()
+
+        # confirm None works
+        self.config_man = mod.ConfigManager(self.schema)
+        self.config_man.add_iterable({'foo':None})
+        self.config_man.validate()
+
+        # confirm it rejects strings
+        with pytest.raises(ValueError):
+            self.config_man = mod.ConfigManager(self.schema)
+            self.config_man.add_iterable({'foo':'Bad Data'})
+            self.config_man.validate()
+
+
+
+
+
+
+class Test_validation_schema(object):
+
+    def test_extra_fields_in_validation_schema(self):
+        self.schema = {'type': 'object',
+                       'properties': {
+                           'foo':  {'required': True,
+                                    'type':     'string',
+                                    'foo':      'bar'},
+                           'baz':  {'enum': ['spaz','fads']} },
+                       'additionalProperties': False }
+        self.config_man = mod.ConfigManager(self.schema)
+
+        sample_dict = {}
+        sample_dict['foo']  = 'bar'
+        sample_dict['baz']  = 'spaz'
+        self.config_man.add_iterable(sample_dict)
+        assert self.config_man.validate() is True
+
+    def test_items_title_and_desc(self):
+        """ Show we can include title & desc columns without breakig anything
+        """
+        self.schema = {'type': 'object',
+                       'title': 'config',
+                       'description': 'the config validation schema',
+                       'properties': {
+                           'results': {
+                                'items': [
+                                        {"type": "integer",
+                                         "title": "field1",
+                                         "description": "blahblahblah" },
+                                        {"type": "string"} ] } } }
+        self.config_man = mod.ConfigManager(self.schema)
+        sample_dict = {}
+        sample_dict["results"] = [1, "foo"]
+        self.config_man.add_iterable(sample_dict)
+        assert self.config_man.validate() is True
+
+    def test_using_properties_title_desc_and_default(self):
+        """ Show we can include title, desc, default columns without breakig anything
+        """
+        self.schema = {'type': 'object',
+                       'title': 'config',
+                       'description': 'the config validation schema',
+                       'properties': {
+                           'foo':  {'required':    True,
+                                    'blank':       True,
+                                    'type':        'string',
+                                    'title':       'foo-title',
+                                    'description': 'foo-desc',
+                                    'default':     'bar'},
+                           'baz':  {'enum': ['spaz','fads']} },
+                       'additionalProperties': False }
+        self.config_man = mod.ConfigManager(self.schema)
+        sample_dict = {}
+        sample_dict['foo']  = 'string'
+        sample_dict['baz']  = 'spaz'
+        self.config_man.add_iterable(sample_dict)
+        assert self.config_man.validate() is True
+
+
+class Test_apply_defaults(object):
+    def setup_method(self, method):
+        self.schema = {'type': 'object',
+                       'properties': {
+                         'foo':  {'type':    ['null', 'string'],
+                                  'default': 'foostuff'},
+                         'baz':  {'type':    'string'} },
+                       'additionalProperties': False } 
+        self.config_man = mod.ConfigManager(self.schema)
+
+    def test_populated_config_has_no_changes(self):
+        sample_dict = {}
+        sample_dict['foo']  = 'bar'
+        sample_dict['baz']  = 'spaz'
+        self.config_man.add_iterable(sample_dict)
+        assert self.config_man.validate() is True
+        self.config_man.apply_defaults()
+        assert self.config_man.validate() is True
+        assert self.config_man.cm_config['foo'] == 'bar'
+        assert self.config_man.cm_config['baz'] == 'spaz'
+
+    def test_unpopulated_config_is_changed(self):
+        sample_dict = {}
+        sample_dict['foo']  = None
+        sample_dict['baz']  = 'spaz'
+        self.config_man.add_iterable(sample_dict)
+        assert self.config_man.validate() is True
+        self.config_man.apply_defaults()
+        assert self.config_man.validate() is True
+        assert self.config_man.cm_config['foo'] == 'foostuff'
+        assert self.config_man.cm_config['baz'] == 'spaz'
+
+
 
 class Test_access_via_namespace(object):
-
 
     def setup_method(self, method):
         self.config_man = mod.ConfigManager()
@@ -286,4 +420,6 @@ class Test_access_via_namespace(object):
         sample_dict['add_file'] = 'bar'
         with pytest.raises(ValueError):
             self.config_man.add_iterable(sample_dict)
+
+
 
