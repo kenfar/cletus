@@ -1,3 +1,10 @@
+# v1.0.8 - 2015-01
+   * cletus_config.py
+     - added tests to confirm optional column NULLs
+     - added remove_null_overrides to simplify use
+     - added apply_defaults to simplify use
+     - fix: stopped putting copy of sample configs in /tmp
+
 # v1.0.6 - 2014-07
    * cletus_archiver.py
      - added comments
