@@ -29,6 +29,7 @@ from __future__ import division
 import os
 import sys
 
+import argparse
 import time
 import logging
 from pprint import pprint as pp
@@ -175,23 +176,28 @@ class ConfigManager(object):
         self.cm_config_namespace.update(vars(args))
         self._post_add_maintenance(self.cm_config_namespace)
 
-
-
     def add_iterable(self, user_iter):
         self.cm_config_iterable = {}
         self.cm_config_iterable.update(user_iter)
         self._post_add_maintenance(self.cm_config_iterable)
+
+    def remove_null_overrides(self, dictname):
+        working_dict = dict(dictname)
+        for key in dictname:
+            if dictname[key] is None and self.cm_config.get(key, None) is not None:
+                working_dict.pop(key)
+        return working_dict
 
 
     def validate(self, config_type='config', schema=None):
 
         config_schema = schema or self.cm_config_schema
 
-        config_types = {'config': self.cm_config,
-                        'config_file': self.cm_config_file,
-                        'config_env': self.cm_config_env,
+        config_types = {'config':           self.cm_config,
+                        'config_file':      self.cm_config_file,
+                        'config_env':       self.cm_config_env,
                         'config_namespace': self.cm_config_namespace,
-                        'config_iterable': self.cm_config_iterable}
+                        'config_iterable':  self.cm_config_iterable}
         assert config_type in config_types
 
         if self.cm_config_schema:
@@ -206,4 +212,18 @@ class ConfigManager(object):
         else:
             return False
 
+
+    def apply_defaults(self):
+        """ Applies defaults to empty config items with the following limits:
+            - only if they have a default field created within the schema
+            - only if they are top-level items - no nested items
+        """
+        for key in self.cm_config:
+            try:
+                if (self.cm_config[key] is None
+                        and self.cm_config_schema['properties'][key].get('default', None)):
+                    self.cm_config[key] = self.cm_config_schema['properties'][key]['default']
+            except KeyError:
+                pass # catching possible problem where there's no 'properties'
+                     # value at the top of the config
 
