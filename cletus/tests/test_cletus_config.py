@@ -181,8 +181,7 @@ class Test_add_iterables_twice(object):
         second_dict = { 'foo':None,
                         'bar':'somebar',
                         'baz':'somebaz'}
-        second_dict_subset = self.config_man.remove_null_overrides(second_dict)
-        self.config_man.add_iterable(second_dict_subset)
+        self.config_man.add_iterable(second_dict)
 
         # confirm that second iterative-add didn't pick up baz from first:
         assert self.config_man.cm_config['foo'] == 'somefoo'
@@ -362,14 +361,14 @@ class Test_validation_schema(object):
         assert self.config_man.validate() is True
 
 
-class Test_apply_defaults(object):
+class Test_add_defaults(object):
     def setup_method(self, method):
         self.schema = {'type': 'object',
                        'properties': {
-                         'foo':  {'type':    ['null', 'string'],
-                                  'default': 'foostuff'},
+                         'foo':  {'type':    ['null', 'string']},
                          'baz':  {'type':    'string'} },
                        'additionalProperties': False } 
+        self.defaults = {'foo':  'foostuff'}
         self.config_man = mod.ConfigManager(self.schema)
 
     def test_populated_config_has_no_changes(self):
@@ -378,7 +377,7 @@ class Test_apply_defaults(object):
         sample_dict['baz']  = 'spaz'
         self.config_man.add_iterable(sample_dict)
         assert self.config_man.validate() is True
-        self.config_man.apply_defaults()
+        self.config_man.add_defaults(self.defaults)
         assert self.config_man.validate() is True
         assert self.config_man.cm_config['foo'] == 'bar'
         assert self.config_man.cm_config['baz'] == 'spaz'
@@ -389,7 +388,7 @@ class Test_apply_defaults(object):
         sample_dict['baz']  = 'spaz'
         self.config_man.add_iterable(sample_dict)
         assert self.config_man.validate() is True
-        self.config_man.apply_defaults()
+        self.config_man.add_defaults(self.defaults)
         assert self.config_man.validate() is True
         assert self.config_man.cm_config['foo'] == 'foostuff'
         assert self.config_man.cm_config['baz'] == 'spaz'
