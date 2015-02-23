@@ -45,26 +45,6 @@ class NullHandler(logging.Handler):
         pass
 
 
-def dcoaler(dict, key, value_default=None):
-    """ Coalescing function for dictionaries:
-        input arguments:
-           - config - dictionary
-           - key    - key within dictionary
-        output:
-           - value associated with key if it exists
-             value_default otherwise
-        The objective of this function is to provide a very concise way to handle optional
-	keys in places like config files.
-    """
-    try:
-        return dict[key]
-    except KeyError:
-        return value_default
-
-
-
-
-
 class ConfigManager(object):
 
     def __init__(self,
@@ -87,6 +67,7 @@ class ConfigManager(object):
         self.cm_config_env       = {}
         self.cm_config_namespace = {}
         self.cm_config_iterable  = {}
+        self.cm_config_defaults  = {}
         self.cm_config           = {}
 
         # store an original copy of variable names to use to protect
@@ -104,10 +85,20 @@ class ConfigManager(object):
                 self.__dict__[key] = val
 
     def _post_add_maintenance(self, config):
-        self.cm_config.update(config)
-        self.log_level = dcoaler(self.cm_config, 'log_level', None)
+        clean_config = self._remove_null_overrides(config)
+        self.cm_config.update(clean_config)
+
+        self.log_level = self.cm_config.get('log_level', None)
         if self.cm_namespace_access:
             self._bunch()
+
+
+    def _remove_null_overrides(self, dictname):
+        working_dict = dict(dictname)
+        for key in dictname:
+            if dictname[key] is None and self.cm_config.get(key, None) is not None:
+                working_dict.pop(key)
+        return working_dict
 
 
     def add_file(self,
@@ -181,12 +172,19 @@ class ConfigManager(object):
         self.cm_config_iterable.update(user_iter)
         self._post_add_maintenance(self.cm_config_iterable)
 
-    def remove_null_overrides(self, dictname):
-        working_dict = dict(dictname)
-        for key in dictname:
-            if dictname[key] is None and self.cm_config.get(key, None) is not None:
-                working_dict.pop(key)
-        return working_dict
+    def add_defaults(self, default_dict):
+        """ Applies defaults to empty config items with the following limits:
+            - only if they have a default field created within the schema
+            - only if they are top-level items - no nested items
+        """
+        # first create dict with all needed defaults:
+        for key in self.cm_config:
+           if self.cm_config[key] is None and default_dict.get(key, None) is not None:
+               self.cm_config_defaults[key] = default_dict[key]
+
+        # next update the main config from it:
+        self._post_add_maintenance(self.cm_config_defaults)
+
 
 
     def validate(self, config_type='config', schema=None):
@@ -213,17 +211,4 @@ class ConfigManager(object):
             return False
 
 
-    def apply_defaults(self):
-        """ Applies defaults to empty config items with the following limits:
-            - only if they have a default field created within the schema
-            - only if they are top-level items - no nested items
-        """
-        for key in self.cm_config:
-            try:
-                if (self.cm_config[key] is None
-                        and self.cm_config_schema['properties'][key].get('default', None)):
-                    self.cm_config[key] = self.cm_config_schema['properties'][key]['default']
-            except KeyError:
-                pass # catching possible problem where there's no 'properties'
-                     # value at the top of the config
 
