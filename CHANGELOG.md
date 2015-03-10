@@ -1,4 +1,4 @@
-# v1.0.9 - 2015-03
+# v1.0.10 - 2015-03
    * cletus_config.py
      - fix: diminished logging
 
