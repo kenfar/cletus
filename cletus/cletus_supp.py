@@ -139,7 +139,6 @@ class SuppressCheck(object):
             - if suppress is not provided, then it defaults to the app_name
         """
         self.names_suppressed = self._get_suppressed_names()
-        self.logger.critical(','.join(self.names_suppressed))
 
         if suppress_name is None:
             suppress_name = self.app_name
@@ -149,14 +148,11 @@ class SuppressCheck(object):
             return True
         else:
             full_suppress_name = 'name-%s.suppress' % suppress_name
-            self.logger.info('full_suppress_name: %s' % full_suppress_name)
-            self.logger.info('self.names_suppressed: ')
-            self.logger.info(','.join(self.names_suppressed))
             if full_suppress_name in self.names_suppressed:
                 self.logger.info('Process has been suppressed')
                 return True
             else:
-                self.logger.info('Process has NOT been suppressed')
+                self.logger.debug('Process has NOT been suppressed')
                 return False
 
 
@@ -164,7 +160,7 @@ class SuppressCheck(object):
         raw_files   = glob.glob(os.path.join(self.config_dir, '*.*'))
         clean_files = []
         for one_file in raw_files:
-            self.logger.info('checking file: %s' % one_file)
+            self.logger.debug('checking file: %s' % one_file)
             if _valid_suppress_file(one_file):
                 head, tail = os.path.split(one_file)
                 clean_files.append(tail)

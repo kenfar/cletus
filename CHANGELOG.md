@@ -1,3 +1,7 @@
+# v1.0.9 - 2015-03
+   * cletus_config.py
+     - fix: diminished logging
+
 # v1.0.8 - 2015-01
    * cletus_config.py
      - added tests to confirm optional column NULLs
