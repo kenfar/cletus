@@ -18,7 +18,10 @@ import pytest
 import fcntl
 from os.path import dirname, basename, isfile, isdir, exists
 
-sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, dirname('./'))
+sys.path.insert(0, dirname('../'))
+sys.path.insert(0, dirname('../../'))
+
 import cletus.cletus_job  as mod
 
 test_path = dirname(os.path.realpath((__file__)))
@@ -114,9 +117,11 @@ class TestCompetingJobs(object):
                        --post-lock-sleep 3      \
                   ''' % test_path
        self.c   = envoy.connect(cmd1)
+       cmd1_start_time = time.time()
 
        #---- ensure cmd1 locks file before cmd2 starts!
        time.sleep(0.5)
+       print 'sleep for 0.5 seconds'
 
        #---- try to get lock, fail, quit fast 
        cmd2     = '''%s/run_cletus_job_once.py   \
@@ -124,13 +129,30 @@ class TestCompetingJobs(object):
                        --post-lock-sleep 0       \
                   ''' % test_path
        self.c2  = envoy.connect(cmd2)
+       cmd2_start_time = time.time()
 
        #---- finish cmd2, then finish cmd1
-       self.c.block()
        self.c2.block()
+       cmd2_dur = time.time() - cmd2_start_time
+       self.c.block()
+       cmd1_dur = time.time() - cmd1_start_time
 
        assert self.c.status_code  == 0 # locked
        assert self.c2.status_code != 0 # not-locked
+       assert cmd2_dur < 2.0
+       print('\nfirst process info:')
+       print(cmd1)
+       print self.c.std_out
+       print self.c.std_err
+       print 'cmd1 dur: %f' % cmd1_dur
+       print 'cmd1 lock status: %s' % self.c.status_code
+       print('second process info:')
+       print(cmd2)
+       print self.c2.std_out
+       print self.c2.std_err
+       print 'cmd2 dur: %f' % cmd2_dur
+       print 'cmd2 lock status: %s' % self.c2.status_code
+
 
 
     def test_two_asynch_running_retry_locks(self):
