@@ -1,3 +1,9 @@
+# v1.0.11 - 2015-05
+   * cletus_config.py
+     - fix: improved defaulting
+   * everything:
+     - ran modernizer to make the code more python3-ready
+
 # v1.0.10 - 2015-03
    * cletus_config.py
      - fix: diminished logging
