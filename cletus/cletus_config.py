@@ -26,6 +26,7 @@
 # 3. allow users to lookup environ variables and override config with them
 
 from __future__ import division
+from __future__ import absolute_import
 import os
 import sys
 
@@ -72,15 +73,15 @@ class ConfigManager(object):
 
         # store an original copy of variable names to use to protect
         # from updating by bunch later on.
-        self.cm_orig_dict_keys   = self.__dict__.keys()
+        self.cm_orig_dict_keys   = list(self.__dict__.keys())
 
 
     def _bunch(self):
-        for key, val in self.cm_config.items():
+        for key, val in list(self.cm_config.items()):
             if key in self.cm_orig_dict_keys:
-                raise ValueError, 'config key is a reserved value: %s' % key
+                raise ValueError('config key is a reserved value: %s' % key)
             elif key in dir(ConfigManager):
-                raise ValueError, 'config key is a reserved value: %s' % key
+                raise ValueError('config key is a reserved value: %s' % key)
             else:
                 self.__dict__[key] = val
 
@@ -119,11 +120,11 @@ class ConfigManager(object):
             self.cm_logger.debug('using app_name & config_fn: %s' % config_fqfn)
         else:
             self.cm_logger.critical('Invalid combination of args.  Provide either config_fqfn, config_dir + config_fn, or app_name + config_fn')
-            raise ValueError, 'invalid config args'
+            raise ValueError('invalid config args')
 
         if not os.path.isfile(self.cm_config_fqfn):
             self.cm_logger.critical('config file missing: %s' % self.cm_config_fqfn)
-            raise IOError, 'config file missing, was expecting %s' % self.cm_config_fqfn
+            raise IOError('config file missing, was expecting %s' % self.cm_config_fqfn)
 
         self.cm_config_file = {}
         with open(self.cm_config_fqfn, 'r') as f:
@@ -139,10 +140,10 @@ class ConfigManager(object):
 
         final_key_list = key_list or self._get_schema_keys()
         if not final_key_list:
-            raise ValueError, 'add_env_vars called without key_list or cm_config_schema'
+            raise ValueError('add_env_vars called without key_list or cm_config_schema')
 
         # get list of tuples of environment variables
-        env_list = os.environ.items()
+        env_list = list(os.environ.items())
 
         for env_tup in env_list:
             if env_tup[0] in final_key_list:
@@ -156,7 +157,7 @@ class ConfigManager(object):
 
     def _get_schema_keys(self):
         if self.cm_config_schema:
-            keylist = [var.upper() for var in self.cm_config_schema['properties'].keys()]
+            keylist = [var.upper() for var in list(self.cm_config_schema['properties'].keys())]
             return keylist
         else:
             return []
@@ -174,13 +175,13 @@ class ConfigManager(object):
 
     def add_defaults(self, default_dict):
         """ Applies defaults to empty config items with the following limits:
-            - only if they have a default field created within the schema
+            - only if the default is not None and the field is None
             - only if they are top-level items - no nested items
         """
         # first create dict with all needed defaults:
-        for key in self.cm_config:
-           if self.cm_config[key] is None and default_dict.get(key, None) is not None:
-               self.cm_config_defaults[key] = default_dict[key]
+        for key in default_dict:
+            if key is not None and self.cm_config.get(key, None) is None:
+                self.cm_config_defaults[key] = default_dict[key]
 
         # next update the main config from it:
         self._post_add_maintenance(self.cm_config_defaults)
@@ -204,7 +205,7 @@ class ConfigManager(object):
             except valid.FieldValidationError as e:
                 self.cm_logger.critical('Config error on field %s' % e.fieldname)
                 self.cm_logger.critical(e)
-                raise ValueError, 'config error: %s' % e
+                raise ValueError('config error: %s' % e)
             else:
                 return True
         else:
