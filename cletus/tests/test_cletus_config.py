@@ -4,6 +4,7 @@
     See the file "LICENSE" for the full license governing use of this file.
     Copyright 2013, 2014 Ken Farmer
 """
+from __future__ import absolute_import
 
 
 # IMPORTS -----------------------------------------------------------------
@@ -133,7 +134,7 @@ class Test_add_iterable(object):
     def test_empty_dict(self):
         sample_dict = {}
         self.config_man.add_iterable(sample_dict)
-        assert self.config_man.cm_config.keys() == []
+        assert list(self.config_man.cm_config.keys()) == []
 
 
 class Test_add_iterables_twice(object):
@@ -213,7 +214,7 @@ class Test_add_namespace(object):
         args       = parser.parse_args([])
         config_man = mod.ConfigManager()
         self.config_man.add_namespace(args)
-        assert config_man.cm_config.keys() == []
+        assert list(config_man.cm_config.keys()) == []
 
 
 

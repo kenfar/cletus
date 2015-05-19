@@ -4,6 +4,8 @@
     See the file "LICENSE" for the full license governing use of this file.
     Copyright 2013, 2014 Ken Farmer
 """
+from __future__ import absolute_import
+from __future__ import print_function
 
 
 
@@ -26,11 +28,11 @@ def main():
     my_test = TestJobCheck(args.lock_wait,
                            args.post_lock_sleep)
     if my_test.lock_process():
-        print 'locked'
-        print 'new_pid:%s' % my_test.new_pid
+        print('locked')
+        print('new_pid:%s' % my_test.new_pid)
         return 0
     else:
-        print 'not-locked'
+        print('not-locked')
         return 1
 
 
@@ -77,11 +79,11 @@ def small_positive_numbers(value):
     try:
         ival = int(value)
     except TypeError:
-        raise TypeError, '%s is not a valid integer' % value
+        raise TypeError('%s is not a valid integer' % value)
     if  0 <= ival <= 100:
         return ival
     else:
-        raise TypeError, '%s is not a small integer between 1 & 100' % value
+        raise TypeError('%s is not a small integer between 1 & 100' % value)
 
 
 

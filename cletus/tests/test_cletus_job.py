@@ -4,6 +4,8 @@
     See the file "LICENSE" for the full license governing use of this file.
     Copyright 2013, 2014 Ken Farmer
 """
+from __future__ import absolute_import
+from __future__ import print_function
 
 
 # IMPORTS -----------------------------------------------------------------
@@ -28,16 +30,16 @@ test_path = dirname(os.path.realpath((__file__)))
 
 
 
-print '\n\nNote: code being tested will produce some messages to ignore\n'
+print('\n\nNote: code being tested will produce some messages to ignore\n')
 
 
 def get_file_pid(temp_dir, pid_fn='*.pid'):
 
     pid_files = glob.glob(os.path.join(temp_dir, pid_fn))
-    print pid_files
+    print(pid_files)
     with open(pid_files[0], 'r') as f:
-        print '================ pid contents: ================ '
-        print f.read()
+        print('================ pid contents: ================ ')
+        print(f.read())
         file_pid = int(f.read())
     return pid_files, file_pid
 
@@ -121,7 +123,7 @@ class TestCompetingJobs(object):
 
        #---- ensure cmd1 locks file before cmd2 starts!
        time.sleep(0.5)
-       print 'sleep for 0.5 seconds'
+       print('sleep for 0.5 seconds')
 
        #---- try to get lock, fail, quit fast 
        cmd2     = '''%s/run_cletus_job_once.py   \
@@ -142,16 +144,16 @@ class TestCompetingJobs(object):
        assert cmd2_dur < 2.0
        print('\nfirst process info:')
        print(cmd1)
-       print self.c.std_out
-       print self.c.std_err
-       print 'cmd1 dur: %f' % cmd1_dur
-       print 'cmd1 lock status: %s' % self.c.status_code
+       print(self.c.std_out)
+       print(self.c.std_err)
+       print('cmd1 dur: %f' % cmd1_dur)
+       print('cmd1 lock status: %s' % self.c.status_code)
        print('second process info:')
        print(cmd2)
-       print self.c2.std_out
-       print self.c2.std_err
-       print 'cmd2 dur: %f' % cmd2_dur
-       print 'cmd2 lock status: %s' % self.c2.status_code
+       print(self.c2.std_out)
+       print(self.c2.std_err)
+       print('cmd2 dur: %f' % cmd2_dur)
+       print('cmd2 lock status: %s' % self.c2.status_code)
 
 
 

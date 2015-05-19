@@ -4,6 +4,8 @@
     See the file "LICENSE" for the full license governing use of this file.
     Copyright 2013, 2014 Ken Farmer
 """
+from __future__ import absolute_import
+from __future__ import print_function
 
 
 
@@ -22,7 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 import cletus.cletus_supp as  mod
 
-print '\nNote: code being tested will produce some messages to ignore'
+print('\nNote: code being tested will produce some messages to ignore')
 
 
 def write_suppression_file(suppress_dir,
@@ -79,7 +81,7 @@ class TestSuppressCheck(object):
        """ Confirm that all names are suppressed when this file exists in
            suppression dir:   'name-all.suppress'
        """
-       print 'testing temp_dir: %s' % self.temp_dir
+       print('testing temp_dir: %s' % self.temp_dir)
        write_suppression_file(self.temp_dir, 'all')
        suppcheck = mod.SuppressCheck(self.app_name,
                                      config_dir=self.temp_parent_dir)
