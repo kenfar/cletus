@@ -23,6 +23,8 @@
 """
 
 from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
 
 import os
 import sys
@@ -107,7 +109,7 @@ class LogManager(object):
             if self.app_name:
                 self.log_dir = appdirs.user_log_dir(self.app_name)
             else:
-                print 'CRITICAL: cannot write logs to files without either log_dir or app_name'
+                print('CRITICAL: cannot write logs to files without either log_dir or app_name')
                 sys.exit(1)
 
         try:
