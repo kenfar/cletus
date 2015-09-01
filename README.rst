@@ -1,5 +1,14 @@
 Cletus is a library to help with write commmand line python programs.
 
+It includes: - cletus\_config: makes it easy for a program to combine
+config files, environmental variables, and arguments into a single
+schema-validated config. - cletus\_supp: allows programs and users to
+"suppress" actions with a program simply by touching a file in a
+dedicated directory. The suppression action may be to quit, or to simply
+sleep or temporarily suspend processing. - cletus\_log: just boilerplate
+for common logging. - cletus\_job: a well-tested mechanism that uses a
+pid file to ensure that the same file doesn't get run twice.
+
 More info is on the cletus wiki here:
 https://github.com/kenfar/cletus/wiki
 
@@ -35,4 +44,3 @@ Copyright
 =========
 
 -  Copyright 2013, 2014 Ken Farmer
-

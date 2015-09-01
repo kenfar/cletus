@@ -6,10 +6,14 @@
        - Sometimes schedules need to be suppressed or suspended - maybe to
          prevent concurrency problems when a backup is running, maybe to
          reduce the number of jobs running to help diagnose a problem, etc.
-       - Most teams rely on commenting jobs out in cron, or killing them,
+       - Some teams rely on commenting jobs out in cron, or killing them,
          or modifying their config to do this.  These approaches are
          error-prone and often don't work well at all.
-       - What's needed is the ability to temporarily suppress a schedule.
+       - The same issue exists with daemons - rather than kill the process,
+         it is sometimes desirable to merely suspend its processing, or
+         cause it to sleep temporarily.
+       - What's needed is the ability to temporarily suppress a schedule or
+         process.
 
     That's what this module does - in a way that makes it easy for the apps:
        - Every application gets a suppression directory.  It can be
@@ -64,7 +68,7 @@
          files.
 
     See the file "LICENSE" for the full license governing use of this file.
-    Copyright 2013, 2014 Ken Farmer
+    Copyright 2013, 2014, 2015 Ken Farmer
 """
 from __future__ import absolute_import
 
@@ -76,12 +80,6 @@ import logging
 
 import appdirs
 
-
-
-class NullHandler(logging.Handler):
-    def emit(self, record):
-        #print record
-        pass
 
 
 class SuppressCheck(object):
@@ -105,27 +103,34 @@ class SuppressCheck(object):
     def __init__(self,
                  app_name,
                  log_name='__main__',
-                 config_dir=None):
-        # set up logging
-        self.logger   = logging.getLogger('%s.cletus_supp' % log_name)
-        # don't print to sys.stderr if no parent logger has been set up:
-        #logging.getLogger(log_name).addHandler(logging.NullHandler())
-        self.logger.debug('SuppressCheck starting now')
+                 config_dir=None,
+                 silent=False):
+
+        self.silent = silent
+
+        if not self.silent:
+            self.logger   = logging.getLogger('%s.cletus_supp' % log_name)
+            self.logger.debug('SuppressCheck starting now')
 
         self.app_name        = app_name
         if config_dir:
             self.config_dir  = os.path.join(config_dir, 'suppress')
-            self.logger.debug('config_dir derrived from arg: %s' % self.config_dir)
+            if not silent:
+                self.logger.debug('config_dir derrived from arg: %s' % self.config_dir)
         else:
             self.config_dir  = os.path.join(appdirs.user_config_dir(app_name), 'suppress')
-            self.logger.debug('config_dir provided via user_config_dir: %s' % self.config_dir)
+            if not silent:
+                self.logger.debug('config_dir provided via user_config_dir: %s' % self.config_dir)
 
         try:
             os.makedirs(self.config_dir)
-            self.logger.info('Suppression dir created successfully')
+            if not silent:
+                self.logger.info('Suppression dir created successfully')
         except OSError as exception:
             if exception.errno != errno.EEXIST:
-                self.logger.critical('Unknown OSError on creating config dir')
+                msg = 'Unknown OSError on creating config dir'
+                if not silent:
+                    self.logger.critical(msg)
                 raise
 
 
@@ -145,15 +150,18 @@ class SuppressCheck(object):
             suppress_name = self.app_name
 
         if 'name-all.suppress' in self.names_suppressed:
-            self.logger.info('Process has been suppressed')
+            if not self.silent:
+                self.logger.info('Process has been suppressed')
             return True
         else:
             full_suppress_name = 'name-%s.suppress' % suppress_name
             if full_suppress_name in self.names_suppressed:
-                self.logger.info('Process has been suppressed')
+                if not self.silent:
+                    self.logger.info('Process has been suppressed')
                 return True
             else:
-                self.logger.debug('Process has NOT been suppressed')
+                if not self.silent:
+                    self.logger.debug('Process has NOT been suppressed')
                 return False
 
 
@@ -161,14 +169,18 @@ class SuppressCheck(object):
         raw_files   = glob.glob(os.path.join(self.config_dir, '*.*'))
         clean_files = []
         for one_file in raw_files:
-            self.logger.debug('checking file: %s' % one_file)
+            if not self.silent:
+                self.logger.debug('checking file: %s' % one_file)
             if _valid_suppress_file(one_file):
                 head, tail = os.path.split(one_file)
                 clean_files.append(tail)
             else:
-                self.logger.critical('invalid suppress file: %s' % one_file)
-                raise ValueError
+                msg = 'invalid suppress file: %s' % one_file
+                if not self.silent:
+                    self.logger.critical(msg)
+                raise ValueError, msg
         return clean_files
+
 
 
 def _valid_suppress_file(name):

@@ -1,3 +1,12 @@
+v1.0.12 - 2015-09
+=================
+
+-  cletus\_supp.py
+
+   -  add: silent arg to SuppressCheck() class to suppress all logging.
+      Needed to handle logging volume when continually-checking for
+      suppressions.
+
 v1.0.11 - 2015-05
 =================
 

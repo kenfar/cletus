@@ -110,6 +110,19 @@ class TestSuppressCheck(object):
        with pytest.raises(ValueError):
             suppcheck.suppressed()
 
+   def test_silent_suppression(self):
+       """ Confirm that the silent argument does not cause the program
+           to crash.
+       """
+       print('testing temp_dir: %s' % self.temp_dir)
+       write_suppression_file(self.temp_dir, 'all')
+       suppcheck = mod.SuppressCheck(self.app_name,
+                                     config_dir=self.temp_parent_dir,
+                                     silent=True)
+       assert suppcheck.suppressed()
+       assert suppcheck.suppressed('bar')
+
+
 
 
 
