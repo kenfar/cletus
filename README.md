@@ -1,4 +1,4 @@
-Cletus is a library to help with write commmand line python programs.
+Cletus is a library to help with commmand line python programs.
 
 It includes:
    - cletus_config: makes it easy for a program to combine config files, environmental 
@@ -37,7 +37,7 @@ More info is on the cletus wiki here:
 
 #Dependencies
 
-   * Python 2.7
+   * Any of: python 2.7, 3.4, 3.5 or pypy
 
 
 
@@ -49,5 +49,5 @@ More info is on the cletus wiki here:
 
 #Copyright
 
-   * Copyright 2013, 2014 Ken Farmer
+   * Copyright 2013, 2014, 2015, 2016 Ken Farmer
 

@@ -2,7 +2,7 @@
 """ Used for testing the cletus_supp module.
 
     See the file "LICENSE" for the full license governing use of this file.
-    Copyright 2013, 2014 Ken Farmer
+    Copyright 2013, 2014, 2015, 2016 Ken Farmer
 """
 from __future__ import absolute_import
 from __future__ import print_function
@@ -19,9 +19,9 @@ import shutil
 import envoy
 import pytest
 from pprint import pprint as pp
+from os.path import dirname
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
 import cletus.cletus_supp as  mod
 
 print('\nNote: code being tested will produce some messages to ignore')

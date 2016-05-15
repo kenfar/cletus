@@ -17,7 +17,7 @@
     that makes it easy for applications.
 
     See the file "LICENSE" for the full license governing use of this file.
-    Copyright 2013, 2014 Ken Farmer
+    Copyright 2013, 2014, 2015, 2016 Ken Farmer
 """
 
 # todo:
@@ -26,6 +26,7 @@
 # 3. allow users to lookup environ variables and override config with them
 
 from __future__ import division
+from __future__ import print_function
 from __future__ import absolute_import
 import os
 import sys

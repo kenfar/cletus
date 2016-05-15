@@ -1,3 +1,7 @@
+# v1.0.13 - 2016-05
+   * all
+     - add: minor changes tox.ini to support python 2.7, 3.4, 3.5, and pypy
+
 # v1.0.12 - 2015-09
    * cletus_supp.py
      - add: silent arg to SuppressCheck() class to suppress all logging.

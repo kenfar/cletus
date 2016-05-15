@@ -2,7 +2,7 @@
 """ Used for testing the cletus_job library.
 
     See the file "LICENSE" for the full license governing use of this file.
-    Copyright 2013, 2014 Ken Farmer
+    Copyright 2013, 2014, 2015, 2016 Ken Farmer
 """
 from __future__ import absolute_import
 from __future__ import print_function
@@ -20,14 +20,8 @@ import pytest
 import fcntl
 from os.path import dirname, basename, isfile, isdir, exists
 
-sys.path.insert(0, dirname('./'))
-sys.path.insert(0, dirname('../'))
-sys.path.insert(0, dirname('../../'))
-
 import cletus.cletus_job  as mod
-
 test_path = dirname(os.path.realpath((__file__)))
-
 
 
 print('\n\nNote: code being tested will produce some messages to ignore\n')
@@ -48,26 +42,6 @@ def write_file_pid(pid_fqfn, pid=123456):
     with open(pid_fqfn, 'w') as f:
         f.write(str(pid))
     return pid
-
-
-
-class TestPidFile(object):
-
-    def setup_method(self, method):
-        pass
-
-    def teardown_method(self, method):
-        pass
-
-    def test_correct_pid(self):
-        pass
-        # run jobcheck directly
-        # read pidfile       
-
-    def test_delete_pidfile(self):
-        pass
-        # run jobcheck directly
-        # read pidfile       
 
 
 
@@ -93,7 +67,7 @@ class TestCompetingJobs(object):
        assert self.c1.status_code == 0 # locked
 
 
-    def test_single_asynch_process(self):
+    def test_single_asynch_process(self):  # turned off for temp testing
        """ Objective is to confirm that this method of 
            running the job will work correctly.
        """

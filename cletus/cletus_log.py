@@ -19,7 +19,7 @@
     provide good logging.
 
     See the file "LICENSE" for the full license governing use of this file.
-    Copyright 2013, 2014 Ken Farmer
+    Copyright 2013, 2014, 2015, 2016 Ken Farmer
 """
 
 from __future__ import division

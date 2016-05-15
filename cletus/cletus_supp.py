@@ -68,10 +68,11 @@
          files.
 
     See the file "LICENSE" for the full license governing use of this file.
-    Copyright 2013, 2014, 2015 Ken Farmer
+    Copyright 2013, 2014, 2015, 2016 Ken Farmer
 """
+from __future__ import print_function
+from __future__ import division
 from __future__ import absolute_import
-
 
 import os
 import errno
@@ -178,7 +179,7 @@ class SuppressCheck(object):
                 msg = 'invalid suppress file: %s' % one_file
                 if not self.silent:
                     self.logger.critical(msg)
-                raise ValueError, msg
+                raise ValueError(msg)
         return clean_files
 
 

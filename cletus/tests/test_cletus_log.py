@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-"""
-    Used to test cletus_log
+""" Used to test cletus_log
 
     See the file "LICENSE" for the full license governing use of this file.
-        Copyright 2013, 2014 Ken Farmer
+        Copyright 2013, 2014, 2015, 2016 Ken Farmer
 """
 from __future__ import absolute_import
 
@@ -16,17 +15,12 @@ import shutil
 import tempfile
 import pytest
 import fileinput
+from os.path import dirname
 
-
-sys.path.insert(0,
-os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
 import cletus.cletus_log  as mod
 
-
-
-
-#print '\n\nNote: code being tested will produce some messages to ignore\n'
-
+print('\n\nNote: code being tested will produce some messages to ignore\n')
 
 
 class TestBasicLog(object):
