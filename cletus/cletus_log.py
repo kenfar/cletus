@@ -45,7 +45,8 @@ class LogManager(object):
                  log_file_size=100000,
                  log_count=10,
                  log_to_console=True,
-                 log_to_file=True):
+                 log_to_file=True,
+                 log_delimiter=':'):
 
         self.app_name       = app_name
         self.log_name       = log_name
@@ -56,6 +57,7 @@ class LogManager(object):
         self.log_fn         = log_fn
         self.log_count      = log_count
         self.log_file_size  = log_file_size
+        self.log_delimiter  = log_delimiter
 
         self._create_log_formatter()
 
@@ -83,7 +85,7 @@ class LogManager(object):
                 <level name> - is one of DEBUG, INFO, WARNING, ERROR, CRITICAL
                 <message>    - is whatever the user provided.
         """
-        log_format      = '%(asctime)s : %(name)-12s : %(levelname)-8s : %(message)s'
+        log_format      = '%(asctime)s {dlm} %(name)-12s {dlm} %(levelname)-8s {dlm} %(message)s'.format(dlm=self.log_delimiter)
         date_format     = '%Y-%m-%d %H.%M.%S'
         self.formatter  = logging.Formatter(log_format, date_format)
 
