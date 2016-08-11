@@ -1,3 +1,10 @@
+v1.0.14 - 2016-08
+=================
+
+-  cletus\_logger
+
+   -  add: user-customizable delimiter to log output
+
 v1.0.13 - 2016-05
 =================
 
@@ -100,5 +107,3 @@ v1.0.1 - 2014-03
 -  cletus\_job
 
    -  initial add
-
-
