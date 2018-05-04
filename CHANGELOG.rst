@@ -1,3 +1,11 @@
+v1.0.15 - 2018-05
+=================
+
+-  setup
+
+   -  alter: replace pip's req module with simple readline to deal with
+      pip 10
+
 v1.0.14 - 2016-08
 =================
 

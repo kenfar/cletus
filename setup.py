@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os, uuid
-from pip.req import parse_requirements
 from setuptools import setup, find_packages
 
 def read(*paths):
@@ -19,7 +18,8 @@ def get_version():
 
 VERSION          = get_version()
 DESCRIPTION      = 'A library of command line utilities'
-REQUIREMENTS     = [str(ir.req) for ir in parse_requirements('requirements.txt', session=uuid.uuid1())]
+with open("requirements.txt") as reqs_file:
+    REQUIREMENTS = reqs_file.readlines()
 
 setup(name             = 'cletus'          ,
       version          = VERSION           ,
